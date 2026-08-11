@@ -32,6 +32,9 @@ club-dashboard-plan.md
 
 /public/assets
 
+# Ignore SimpleCov output.
+/coverage/
+
 # Ignore key files for decrypting credentials and more.
 /config/*.key
 

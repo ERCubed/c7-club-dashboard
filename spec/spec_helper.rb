@@ -12,6 +12,18 @@
 # the additional setup, and require it from the spec files that actually need
 # it.
 #
+require "simplecov"
+SimpleCov.start "rails" do
+  enable_coverage :branch
+  minimum_coverage line: 100, branch: 100
+
+  # Unmodified Rails scaffolding with no logic of our own (request specs load
+  # these as part of booting the app, but never execute their bodies).
+  skip "app/controllers/application_controller.rb"
+  skip "app/jobs/application_job.rb"
+  skip "app/mailers/application_mailer.rb"
+end
+
 # See https://rubydoc.info/gems/rspec-core/RSpec/Core/Configuration
 RSpec.configure do |config|
   # rspec-expectations config goes here. You can use an alternate
