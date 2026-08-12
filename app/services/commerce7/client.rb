@@ -1,9 +1,17 @@
 module Commerce7
-  # HTTP client for Commerce7's REST API. Auth (HTTP Basic with app
-  # credentials + a `tenant` header), the base URL, endpoint paths, the
-  # page/limit params, and the response envelope keys are unconfirmed —
-  # we don't have Commerce7 partner docs or a sample payload yet. Verify
-  # all of this against real sandbox access before relying on it.
+  # HTTP client for Commerce7's REST API. Confirmed against Commerce7's public
+  # docs: base URL, Basic Auth (App ID/App Secret Key as user/pass), endpoint
+  # paths, page/limit pagination (max 50/page, matches PAGE_SIZE), response
+  # envelope keys, and the 100 req/min rate limit.
+  #
+  # Still unresolved: whether the App ID/Secret Key pair is unique per tenant
+  # (what `tenant.api_key`/`api_secret` assumes) or a single pair shared
+  # across every tenant that installs the app — the docs describe it as
+  # created once "for your app," which reads as possibly global. The `tenant`
+  # header below is sent defensively; it's confirmed required for the
+  # separate staff-identity endpoint, but docs don't say whether standard
+  # resource endpoints need it too. Confirm both before relying on this for
+  # real tenant data.
   class Client
     class Error < StandardError; end
     class AuthenticationError < Error; end

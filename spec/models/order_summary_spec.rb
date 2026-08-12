@@ -32,11 +32,11 @@ RSpec.describe OrderSummary, type: :model do
     expect(summary.errors[:order_count]).to be_present
   end
 
-  it "rejects a negative lifetime_value" do
+  it "rejects a negative lifetime_value_cents" do
     tenant = Tenant.create!(commerce7_tenant_id: "abc123")
-    summary = OrderSummary.new(tenant: tenant, commerce7_customer_id: "cust-1", lifetime_value: -1)
+    summary = OrderSummary.new(tenant: tenant, commerce7_customer_id: "cust-1", lifetime_value_cents: -1)
 
     expect(summary).not_to be_valid
-    expect(summary.errors[:lifetime_value]).to be_present
+    expect(summary.errors[:lifetime_value_cents]).to be_present
   end
 end

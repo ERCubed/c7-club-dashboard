@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_11_214229) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_12_135541) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -21,10 +21,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_11_214229) do
     t.string "email"
     t.datetime "joined_at"
     t.string "name"
+    t.string "status"
     t.bigint "tenant_id", null: false
     t.datetime "updated_at", null: false
     t.index ["tenant_id", "club_tier"], name: "index_club_members_on_tenant_id_and_club_tier"
     t.index ["tenant_id", "commerce7_customer_id"], name: "index_club_members_on_tenant_id_and_commerce7_customer_id", unique: true
+    t.index ["tenant_id", "status"], name: "index_club_members_on_tenant_id_and_status"
     t.index ["tenant_id"], name: "index_club_members_on_tenant_id"
   end
 
@@ -32,7 +34,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_11_214229) do
     t.string "commerce7_customer_id", null: false
     t.datetime "created_at", null: false
     t.datetime "last_order_at"
-    t.decimal "lifetime_value", precision: 12, scale: 2, default: "0.0", null: false
+    t.bigint "lifetime_value_cents", default: 0, null: false
     t.integer "order_count", default: 0, null: false
     t.bigint "tenant_id", null: false
     t.datetime "updated_at", null: false

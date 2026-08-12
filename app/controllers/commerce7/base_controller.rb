@@ -2,6 +2,9 @@ module Commerce7
   # Base for Commerce7 webhook receivers (activation, deactivation). These are
   # server-to-server POSTs, not browser requests, so this skips the CSRF check
   # and doesn't inherit ApplicationController's allow_browser restriction.
+  #
+  # Auth is HTTP Basic, per Commerce7's docs: install/uninstall URLs support an
+  # optional username/password configured in their dashboard's "Advanced" section.
   class BaseController < ActionController::Base
     skip_before_action :verify_authenticity_token, raise: false
 
@@ -14,10 +17,14 @@ module Commerce7
     private
 
     def authenticate_commerce7!
-      token = Rails.application.credentials.dig(:commerce7, :webhook_token)
-      return if token.present? && ActiveSupport::SecurityUtils.secure_compare(params[:token].to_s, token)
+      authenticate_or_request_with_http_basic do |username, password|
+        expected_username = Rails.application.credentials.dig(:commerce7, :webhook_username)
+        expected_password = Rails.application.credentials.dig(:commerce7, :webhook_password)
 
-      head :unauthorized
+        expected_username.present? && expected_password.present? &&
+          ActiveSupport::SecurityUtils.secure_compare(username, expected_username) &&
+          ActiveSupport::SecurityUtils.secure_compare(password, expected_password)
+      end
     end
   end
 end

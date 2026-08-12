@@ -32,4 +32,15 @@ RSpec.describe ClubMember, type: :model do
 
     expect(other).to be_valid
   end
+
+  describe ".active" do
+    it "only includes memberships with an Active status" do
+      tenant = Tenant.create!(commerce7_tenant_id: "abc123")
+      Current.tenant = tenant
+      active = ClubMember.create!(tenant: tenant, commerce7_customer_id: "cust-1", status: "Active")
+      ClubMember.create!(tenant: tenant, commerce7_customer_id: "cust-2", status: "Cancelled")
+
+      expect(ClubMember.active).to contain_exactly(active)
+    end
+  end
 end
