@@ -1,0 +1,63 @@
+require "rails_helper"
+
+RSpec.describe Commerce7::ExtensionController, type: :controller do
+  controller do
+    def index
+      render plain: "tenant=#{Current.tenant&.commerce7_tenant_id} staff=#{Current.staff_user && Current.staff_user['firstName']}"
+    end
+  end
+
+  before do
+    routes.draw { get "index" => "commerce7/extension#index" }
+  end
+
+  let!(:tenant) { Tenant.create!(commerce7_tenant_id: "winery-1", activated_at: 1.day.ago) }
+  let(:user_payload) { { "id" => "staff-1", "firstName" => "Jason", "lastName" => "Andres", "email" => "jason@example.com", "role" => "Admin Owner" } }
+  let(:json_headers) { { "Content-Type" => "application/json" } }
+
+  it "resolves Current.tenant and Current.staff_user on valid auth" do
+    stub_request(:get, "https://api.commerce7.com/v1/account/user")
+      .with(headers: { "Authorization" => "jwt-token", "tenant" => "winery-1" })
+      .to_return(status: 200, body: user_payload.to_json, headers: json_headers)
+
+    get :index, params: { tenantId: "winery-1", account: "jwt-token" }
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to eq("tenant=winery-1 staff=Jason")
+  end
+
+  it "returns 403 when the tenant is unknown" do
+    get :index, params: { tenantId: "unknown-winery", account: "jwt-token" }
+
+    expect(response).to have_http_status(:forbidden)
+  end
+
+  it "returns 403 when the tenant is deactivated" do
+    tenant.update!(deactivated_at: Time.current)
+
+    get :index, params: { tenantId: "winery-1", account: "jwt-token" }
+
+    expect(response).to have_http_status(:forbidden)
+  end
+
+  it "returns 401 when Commerce7 rejects the staff token" do
+    stub_request(:get, "https://api.commerce7.com/v1/account/user")
+      .to_return(status: 401, body: { "statusCode" => 401, "type" => "unauthorized" }.to_json, headers: json_headers)
+
+    get :index, params: { tenantId: "winery-1", account: "bad-token" }
+
+    expect(response).to have_http_status(:unauthorized)
+  end
+
+  it "returns 400 when tenantId is missing" do
+    get :index, params: { account: "jwt-token" }
+
+    expect(response).to have_http_status(:bad_request)
+  end
+
+  it "returns 400 when the account token is missing" do
+    get :index, params: { tenantId: "winery-1" }
+
+    expect(response).to have_http_status(:bad_request)
+  end
+end
