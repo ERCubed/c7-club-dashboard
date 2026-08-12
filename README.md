@@ -87,11 +87,6 @@ explicitly for each tenant it processes.
   customers, club memberships, and orders. Handles pagination and 429 rate-limit
   backoff.
 
-See `club-dashboard-plan.md` (local only, gitignored) for the full project plan,
-current progress, and open questions — notably, whether Commerce7 issues one API
-credential pair per app or per tenant is still unresolved pending App Partner
-Program approval.
-
 ## Deployment
 
 Not yet decided — Kamal is configured (`config/deploy.yml`) but no target host is set.
