@@ -15,19 +15,6 @@ RSpec.describe Tenant, type: :model do
     expect(dupe.errors[:commerce7_tenant_id]).to be_present
   end
 
-  it "encrypts api_key and api_secret at rest" do
-    tenant = Tenant.create!(commerce7_tenant_id: "abc123", api_key: "key-123", api_secret: "secret-456")
-
-    raw = ActiveRecord::Base.connection.select_one(
-      "SELECT api_key, api_secret FROM tenants WHERE id = #{tenant.id}"
-    )
-
-    expect(raw["api_key"]).not_to eq("key-123")
-    expect(raw["api_secret"]).not_to eq("secret-456")
-    expect(tenant.reload.api_key).to eq("key-123")
-    expect(tenant.reload.api_secret).to eq("secret-456")
-  end
-
   describe "#active?" do
     it "is active when deactivated_at is nil" do
       tenant = Tenant.create!(commerce7_tenant_id: "abc123")

@@ -4,14 +4,11 @@ module Commerce7
   # paths, page/limit pagination (max 50/page, matches PAGE_SIZE), response
   # envelope keys, and the 100 req/min rate limit.
   #
-  # Still unresolved: whether the App ID/Secret Key pair is unique per tenant
-  # (what `tenant.api_key`/`api_secret` assumes) or a single pair shared
-  # across every tenant that installs the app — the docs describe it as
-  # created once "for your app," which reads as possibly global. The `tenant`
-  # header below is sent defensively; it's confirmed required for the
-  # separate staff-identity endpoint, but docs don't say whether standard
-  # resource endpoints need it too. Confirm both before relying on this for
-  # real tenant data.
+  # The App ID/App Secret Key pair is a single pair for the app as a whole
+  # (confirmed via Commerce7's dev center), not one per tenant — so it comes
+  # from Rails credentials (`commerce7.app_id`/`app_secret_key`), not the
+  # `Tenant` record. The `tenant` header is therefore the only thing that
+  # scopes a request to a specific winery's data.
   class Client
     class Error < StandardError; end
     class AuthenticationError < Error; end
@@ -26,8 +23,8 @@ module Commerce7
     MAX_RETRIES = 3
 
     def initialize(tenant, base_url: BASE_URL, sleeper: ->(seconds) { sleep(seconds) })
-      if tenant.api_key.blank? || tenant.api_secret.blank?
-        raise ArgumentError, "tenant is missing Commerce7 API credentials"
+      if app_id.blank? || app_secret_key.blank?
+        raise ArgumentError, "Commerce7 app credentials (commerce7.app_id/app_secret_key) are not configured"
       end
 
       @tenant = tenant
@@ -109,11 +106,19 @@ module Commerce7
 
     def connection
       @connection ||= Faraday.new(url: base_url) do |f|
-        f.request :authorization, :basic, tenant.api_key, tenant.api_secret
+        f.request :authorization, :basic, app_id, app_secret_key
         f.headers["tenant"] = tenant.commerce7_tenant_id
         f.response :json
         f.adapter Faraday.default_adapter
       end
+    end
+
+    def app_id
+      Rails.application.credentials.dig(:commerce7, :app_id)
+    end
+
+    def app_secret_key
+      Rails.application.credentials.dig(:commerce7, :app_secret_key)
     end
   end
 end

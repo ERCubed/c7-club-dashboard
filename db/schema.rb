@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_12_135541) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_20_164531) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -45,8 +45,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_12_135541) do
 
   create_table "tenants", force: :cascade do |t|
     t.datetime "activated_at"
-    t.string "api_key"
-    t.string "api_secret"
     t.string "commerce7_tenant_id", null: false
     t.datetime "created_at", null: false
     t.datetime "deactivated_at"

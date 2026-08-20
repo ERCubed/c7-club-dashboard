@@ -1,19 +1,23 @@
 require "rails_helper"
 
 RSpec.describe Commerce7::Client do
-  let(:tenant) { Tenant.create!(commerce7_tenant_id: "winery-1", api_key: "key-1", api_secret: "secret-1") }
+  let!(:app_id) { Rails.application.credentials.dig(:commerce7, :app_id) }
+  let!(:app_secret_key) { Rails.application.credentials.dig(:commerce7, :app_secret_key) }
+  let(:tenant) { Tenant.create!(commerce7_tenant_id: "winery-1") }
   let(:client) { described_class.new(tenant, sleeper: ->(seconds) { }) }
   let(:json_headers) { { "Content-Type" => "application/json" } }
 
   describe "#initialize" do
-    it "raises when api_key is missing" do
-      tenant.update!(api_key: nil)
+    it "raises when the app id is not configured" do
+      allow(Rails.application.credentials).to receive(:dig).with(:commerce7, :app_id).and_return(nil)
+      allow(Rails.application.credentials).to receive(:dig).with(:commerce7, :app_secret_key).and_return(app_secret_key)
 
       expect { described_class.new(tenant) }.to raise_error(ArgumentError)
     end
 
-    it "raises when api_secret is missing" do
-      tenant.update!(api_secret: nil)
+    it "raises when the app secret key is not configured" do
+      allow(Rails.application.credentials).to receive(:dig).with(:commerce7, :app_id).and_return(app_id)
+      allow(Rails.application.credentials).to receive(:dig).with(:commerce7, :app_secret_key).and_return(nil)
 
       expect { described_class.new(tenant) }.to raise_error(ArgumentError)
     end
@@ -34,7 +38,7 @@ RSpec.describe Commerce7::Client do
   describe "authentication" do
     it "sends HTTP Basic auth and the tenant header" do
       stub = stub_request(:get, "https://api.commerce7.com/v1/customer")
-        .with(basic_auth: [ "key-1", "secret-1" ], headers: { "tenant" => "winery-1" }, query: hash_including("page" => "1"))
+        .with(basic_auth: [ app_id, app_secret_key ], headers: { "tenant" => "winery-1" }, query: hash_including("page" => "1"))
         .to_return(status: 200, body: { "customers" => [] }.to_json, headers: json_headers)
 
       client.each_customer { |record| record }

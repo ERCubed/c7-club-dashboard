@@ -43,6 +43,12 @@ commerce7:
   webhook_password: ...
   # shared secret you also configure in Commerce7's app dashboard,
   # under the Install/Uninstall URLs' "Advanced" section
+  app_id: ...
+  app_secret_key: ...
+  # a single App ID/App Secret Key pair for the app as a whole (not
+  # per-tenant), from Commerce7's dev center — used by Commerce7::Client
+  # to authenticate REST calls; the `tenant` header scopes each request
+  # to a specific winery
 ```
 
 ## Running the app
