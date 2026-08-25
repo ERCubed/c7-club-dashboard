@@ -8,6 +8,11 @@ module Commerce7
     # Reference categorical palette (see the dataviz skill's palette.md) —
     # fixed hue order, never cycled per tier's rank so a tier keeps its color
     # across renders even as membership shifts which tier is largest.
+    #
+    # TODO: this is just "next color in the list" per tier, which can land
+    # oddly for tiers named after colors (e.g. Red Club landing on blue) —
+    # revisit with real per-tenant tier names, e.g. a name -> hue override
+    # for color-named tiers, falling back to this palette otherwise.
     TIER_COLORS = %w[#2a78d6 #eb6834 #1baf7a #eda100 #e87ba4 #008300 #4a3aa7 #e34948].freeze
 
     def show

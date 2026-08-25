@@ -48,7 +48,7 @@ RSpec.describe "Commerce7 dashboard", type: :request do
     get commerce7_dashboard_path, params: auth_params.merge(at_risk_months: 0)
 
     expect(response.body).to include("Old Member")
-    expect(response.body).to include("At risk (6+ months)")
+    expect(response.body).to include("At risk (6+ months with no activity)")
   end
 
   it "shows empty states when there is no data" do

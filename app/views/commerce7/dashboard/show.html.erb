@@ -12,7 +12,7 @@
   </header>
 
   <section aria-labelledby="membership-heading">
-    <h2 id="membership-heading" class="text-sm font-medium text-stone-500 mb-3">Membership</h2>
+    <h2 id="membership-heading" class="text-sm font-medium text-stone-500 mb-3">Membership Overview</h2>
     <div class="grid grid-cols-2 gap-4">
       <div class="rounded-lg border border-stone-200 p-4">
         <p class="text-sm text-stone-500">Active members</p>
@@ -24,7 +24,7 @@
       <div class="rounded-lg border border-stone-200 border-l-4 p-4" style="border-left-color: #fab219">
         <p class="text-sm text-stone-500 flex items-center gap-1.5">
           <%= warning_icon %>
-          At risk (<%= @at_risk_months %>+ months)
+          At risk (<%= @at_risk_months %>+ months with no activity)
         </p>
         <p class="mt-1 text-2xl font-semibold text-stone-900" style="font-variant-numeric: tabular-nums;">
           <%= number_with_delimiter(@at_risk_count) %>
@@ -51,8 +51,8 @@
                 <%= number_with_delimiter(count) %> · <%= percentage_text %>
               </span>
             </div>
-            <div class="h-2 rounded-full bg-stone-100" role="img" aria-label="<%= "#{label}: #{percentage_text}" %>">
-              <div class="h-2 rounded-r-full" style="width: <%= percentage %>%; background-color: <%= @tier_colors[tier] %>"></div>
+            <div class="h-3 rounded-full bg-stone-100" role="img" aria-label="<%= "#{label}: #{percentage_text}" %>">
+              <div class="h-3 rounded-r-full" style="width: <%= percentage %>%; background-color: <%= @tier_colors[tier] %>"></div>
             </div>
           </div>
         <% end %>
