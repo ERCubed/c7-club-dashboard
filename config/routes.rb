@@ -13,6 +13,10 @@ Rails.application.routes.draw do
 
     # App Extension page for the Reports > Club Report placement.
     get "dashboard", to: "dashboard#show", as: :dashboard
+
+    # Tab Menu extension on Order Detail: a per-customer club membership summary.
+    # Commerce7 has no Customer Detail placement, so this is the nearest fit.
+    get "order-detail-card", to: "order_detail_card#show", as: :order_detail_card
   end
 
   # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)

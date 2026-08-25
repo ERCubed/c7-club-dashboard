@@ -1,0 +1,47 @@
+<% content_for :title, "Club Membership" %>
+
+<div class="p-4">
+  <% if @member.nil? %>
+    <p class="text-sm text-stone-500">Not a Commerce7 club member.</p>
+  <% else %>
+    <div class="rounded-lg border border-stone-200 p-4<%= " border-l-4" if @at_risk %>"<% if @at_risk %> style="border-left-color: #fab219"<% end %>>
+      <div class="flex items-baseline justify-between gap-2">
+        <p class="font-medium text-stone-900"><%= @member.club_tier.presence || "Club member" %></p>
+        <span class="shrink-0 text-xs px-2 py-0.5 rounded-full <%= @member.status == "Active" ? "bg-green-50 text-green-700" : "bg-stone-100 text-stone-600" %>"><%= @member.status %></span>
+      </div>
+
+      <dl class="mt-3 space-y-1.5 text-sm">
+        <div class="flex items-baseline justify-between gap-3">
+          <dt class="text-stone-500">Lifetime value</dt>
+          <dd class="text-stone-900" style="font-variant-numeric: tabular-nums;">
+            <%= number_to_currency((@member.order_summary&.lifetime_value_cents || 0) / 100.0) %>
+          </dd>
+        </div>
+
+        <div class="flex items-baseline justify-between gap-3">
+          <dt class="text-stone-500">Orders</dt>
+          <dd class="text-stone-900" style="font-variant-numeric: tabular-nums;">
+            <%= @member.order_summary&.order_count || 0 %>
+          </dd>
+        </div>
+
+        <div class="flex items-baseline justify-between gap-3">
+          <dt class="text-stone-500">Last order</dt>
+          <dd class="text-stone-900"><%= @member.order_summary&.last_order_at&.to_date&.to_fs(:long) || "Never" %></dd>
+        </div>
+
+        <div class="flex items-baseline justify-between gap-3">
+          <dt class="text-stone-500">Member since</dt>
+          <dd class="text-stone-900"><%= @member.joined_at&.to_date&.to_fs(:long) || "—" %></dd>
+        </div>
+      </dl>
+
+      <% if @at_risk %>
+        <p class="mt-3 flex items-center gap-1.5 text-xs text-stone-600">
+          <%= warning_icon %>
+          At risk — no order in <%= @at_risk_months %>+ months
+        </p>
+      <% end %>
+    </div>
+  <% end %>
+</div>
