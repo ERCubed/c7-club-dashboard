@@ -11,24 +11,15 @@
     </p>
   </header>
 
-  <section aria-labelledby="tier-breakdown-heading">
-    <h2 id="tier-breakdown-heading" class="text-sm font-medium text-stone-500 mb-3">Membership</h2>
-    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+  <section aria-labelledby="membership-heading">
+    <h2 id="membership-heading" class="text-sm font-medium text-stone-500 mb-3">Membership</h2>
+    <div class="grid grid-cols-2 gap-4">
       <div class="rounded-lg border border-stone-200 p-4">
         <p class="text-sm text-stone-500">Active members</p>
         <p class="mt-1 text-2xl font-semibold text-stone-900" style="font-variant-numeric: tabular-nums;">
           <%= number_with_delimiter(@tier_breakdown.values.sum) %>
         </p>
       </div>
-
-      <% @tier_breakdown.each do |tier, count| %>
-        <div class="rounded-lg border border-stone-200 p-4">
-          <p class="text-sm text-stone-500 truncate"><%= tier.presence || "No tier" %></p>
-          <p class="mt-1 text-2xl font-semibold text-stone-900" style="font-variant-numeric: tabular-nums;">
-            <%= number_with_delimiter(count) %>
-          </p>
-        </div>
-      <% end %>
 
       <div class="rounded-lg border border-stone-200 border-l-4 p-4" style="border-left-color: #fab219">
         <p class="text-sm text-stone-500 flex items-center gap-1.5">
@@ -40,6 +31,33 @@
         </p>
       </div>
     </div>
+  </section>
+
+  <section aria-labelledby="tier-breakdown-heading">
+    <h2 id="tier-breakdown-heading" class="text-sm font-medium text-stone-500 mb-3">Membership by tier</h2>
+    <% total_members = @tier_breakdown.values.sum %>
+    <% if total_members.zero? %>
+      <p class="text-sm text-stone-500">No active members yet.</p>
+    <% else %>
+      <div class="rounded-lg border border-stone-200 p-4 space-y-3">
+        <% @tier_breakdown.sort_by { |_tier, count| -count }.each do |tier, count| %>
+          <% label = tier.presence || "No tier" %>
+          <% percentage = count * 100.0 / total_members %>
+          <% percentage_text = number_to_percentage(percentage, precision: 1) %>
+          <div>
+            <div class="flex items-baseline justify-between gap-3 text-sm mb-1">
+              <span class="text-stone-700 truncate"><%= label %></span>
+              <span class="shrink-0 text-stone-500" style="font-variant-numeric: tabular-nums;">
+                <%= number_with_delimiter(count) %> · <%= percentage_text %>
+              </span>
+            </div>
+            <div class="h-2 rounded-full bg-stone-100" role="img" aria-label="<%= "#{label}: #{percentage_text}" %>">
+              <div class="h-2 rounded-r-full" style="width: <%= percentage %>%; background-color: <%= @tier_colors[tier] %>"></div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
   </section>
 
   <section aria-labelledby="top-spenders-heading">

@@ -55,8 +55,33 @@ RSpec.describe "Commerce7 dashboard", type: :request do
     get commerce7_dashboard_path, params: auth_params
 
     expect(response).to have_http_status(:ok)
+    expect(response.body).to include("No active members yet.")
     expect(response.body).to include("No order data yet.")
     expect(response.body).to include("No members at risk right now.")
+  end
+
+  it "shows each tier's share of active membership" do
+    3.times { |i| create_member(customer_id: "red-#{i}", name: "Red #{i}", club_tier: "Red Club") }
+    create_member(customer_id: "cust-white", name: "White One", club_tier: "White Club")
+
+    get commerce7_dashboard_path, params: auth_params
+
+    expect(response.body).to include("Red Club")
+    expect(response.body).to include("75.0%")
+    expect(response.body).to include("White Club")
+    expect(response.body).to include("25.0%")
+  end
+
+  it "assigns tier colors by name so they stay stable as relative size shifts" do
+    create_member(customer_id: "cust-apple-1", name: "A1", club_tier: "Apple Club")
+    create_member(customer_id: "cust-apple-2", name: "A2", club_tier: "Apple Club")
+    5.times { |i| create_member(customer_id: "white-#{i}", name: "White #{i}", club_tier: "White Club") }
+
+    get commerce7_dashboard_path, params: auth_params
+
+    color_for = ->(label) { response.body[/aria-label="#{Regexp.escape(label)}:.*?background-color:\s*(#\w+)/m, 1] }
+    expect(color_for.call("Apple Club")).to eq("#2a78d6")
+    expect(color_for.call("White Club")).to eq("#eb6834")
   end
 
   it "drops the default X-Frame-Options so Commerce7 can embed the page" do
