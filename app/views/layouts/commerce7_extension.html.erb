@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= content_for(:title) || "Club Dashboard" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+
+    <%= yield :head %>
+
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+
+    <%# Lets Commerce7's admin panel and this iframe negotiate height — required for App Extension pages per Commerce7's docs. %>
+    <script type="text/javascript" src="https://dev-center.platform.commerce7.com/v2/commerce7.js"></script>
+  </head>
+
+  <body class="bg-white text-stone-900">
+    <%= yield %>
+  </body>
+</html>

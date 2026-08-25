@@ -26,6 +26,15 @@ RSpec.describe Commerce7::ExtensionController, type: :controller do
     expect(response.body).to eq("tenant=winery-1 staff=Jason")
   end
 
+  it "drops the default X-Frame-Options so Commerce7 can embed the page" do
+    stub_request(:get, "https://api.commerce7.com/v1/account/user")
+      .to_return(status: 200, body: user_payload.to_json, headers: json_headers)
+
+    get :index, params: { tenantId: "winery-1", account: "jwt-token" }
+
+    expect(response.headers["X-Frame-Options"]).to be_nil
+  end
+
   it "returns 403 when the tenant is unknown" do
     get :index, params: { tenantId: "unknown-winery", account: "jwt-token" }
 

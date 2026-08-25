@@ -1,0 +1,127 @@
+<% content_for :title, "Club Dashboard" %>
+
+<div class="max-w-5xl mx-auto px-6 py-8 space-y-10">
+  <header>
+    <h1 class="text-xl font-semibold text-stone-900">Club Dashboard</h1>
+    <p class="text-sm text-stone-500">
+      <% if Current.staff_user&.dig("firstName") %>
+        Welcome back, <%= Current.staff_user["firstName"] %>.
+      <% end %>
+      Synced from Commerce7 on the last hourly run.
+    </p>
+  </header>
+
+  <section aria-labelledby="tier-breakdown-heading">
+    <h2 id="tier-breakdown-heading" class="text-sm font-medium text-stone-500 mb-3">Membership</h2>
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      <div class="rounded-lg border border-stone-200 p-4">
+        <p class="text-sm text-stone-500">Active members</p>
+        <p class="mt-1 text-2xl font-semibold text-stone-900" style="font-variant-numeric: tabular-nums;">
+          <%= number_with_delimiter(@tier_breakdown.values.sum) %>
+        </p>
+      </div>
+
+      <% @tier_breakdown.each do |tier, count| %>
+        <div class="rounded-lg border border-stone-200 p-4">
+          <p class="text-sm text-stone-500 truncate"><%= tier.presence || "No tier" %></p>
+          <p class="mt-1 text-2xl font-semibold text-stone-900" style="font-variant-numeric: tabular-nums;">
+            <%= number_with_delimiter(count) %>
+          </p>
+        </div>
+      <% end %>
+
+      <div class="rounded-lg border border-stone-200 border-l-4 p-4" style="border-left-color: #fab219">
+        <p class="text-sm text-stone-500 flex items-center gap-1.5">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="#fab219" class="size-4 shrink-0" aria-hidden="true">
+            <path fill-rule="evenodd" d="M9.401 1.596c.376-.65 1.322-.65 1.698 0l7.86 13.598c.375.65-.093 1.463-.849 1.463H2.39c-.756 0-1.224-.813-.849-1.463L9.401 1.596ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 8a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
+          </svg>
+          At risk (<%= @at_risk_months %>+ months)
+        </p>
+        <p class="mt-1 text-2xl font-semibold text-stone-900" style="font-variant-numeric: tabular-nums;">
+          <%= number_with_delimiter(@at_risk_count) %>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="top-spenders-heading">
+    <h2 id="top-spenders-heading" class="text-sm font-medium text-stone-500 mb-3">Top spenders</h2>
+    <% if @top_spenders.any? %>
+      <div class="overflow-x-auto rounded-lg border border-stone-200">
+        <table class="min-w-full text-sm">
+          <thead>
+            <tr class="border-b border-stone-200 text-left text-stone-500">
+              <th class="px-4 py-2 font-medium">Name</th>
+              <th class="px-4 py-2 font-medium">Tier</th>
+              <th class="px-4 py-2 font-medium text-right">Lifetime value</th>
+              <th class="px-4 py-2 font-medium text-right">Orders</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @top_spenders.each do |member| %>
+              <tr class="border-b border-stone-100 last:border-0">
+                <td class="px-4 py-2">
+                  <div class="text-stone-900"><%= member.name.presence || "—" %></div>
+                  <div class="text-stone-500 text-xs"><%= member.email %></div>
+                </td>
+                <td class="px-4 py-2 text-stone-700"><%= member.club_tier %></td>
+                <td class="px-4 py-2 text-right text-stone-900" style="font-variant-numeric: tabular-nums;">
+                  <%= number_to_currency(member.order_summary.lifetime_value_cents / 100.0) %>
+                </td>
+                <td class="px-4 py-2 text-right text-stone-700" style="font-variant-numeric: tabular-nums;">
+                  <%= member.order_summary.order_count %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <p class="text-sm text-stone-500">No order data yet.</p>
+    <% end %>
+  </section>
+
+  <section aria-labelledby="at-risk-heading">
+    <div class="flex items-baseline justify-between mb-3">
+      <h2 id="at-risk-heading" class="text-sm font-medium text-stone-500">At-risk members</h2>
+      <%= form_with url: commerce7_dashboard_path, method: :get, class: "flex items-center gap-2 text-sm text-stone-500" do %>
+        <%= hidden_field_tag :tenantId, params[:tenantId] %>
+        <%= hidden_field_tag :account, params[:account] %>
+        <label for="at_risk_months">No order in</label>
+        <%= number_field_tag :at_risk_months, @at_risk_months, min: 1, class: "w-16 rounded border border-stone-300 px-2 py-1", id: "at_risk_months" %>
+        <label for="at_risk_months">months</label>
+        <button type="submit" class="rounded border border-stone-300 px-3 py-1 hover:bg-stone-50">Apply</button>
+      <% end %>
+    </div>
+
+    <% if @at_risk_members.any? %>
+      <div class="overflow-x-auto rounded-lg border border-stone-200">
+        <table class="min-w-full text-sm">
+          <thead>
+            <tr class="border-b border-stone-200 text-left text-stone-500">
+              <th class="px-4 py-2 font-medium">Name</th>
+              <th class="px-4 py-2 font-medium">Tier</th>
+              <th class="px-4 py-2 font-medium text-right">Last order</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @at_risk_members.each do |member| %>
+              <tr class="border-b border-stone-100 last:border-0">
+                <td class="px-4 py-2">
+                  <div class="text-stone-900"><%= member.name.presence || "—" %></div>
+                  <div class="text-stone-500 text-xs"><%= member.email %></div>
+                </td>
+                <td class="px-4 py-2 text-stone-700"><%= member.club_tier %></td>
+                <td class="px-4 py-2 text-right text-stone-700">
+                  <%= member.order_summary&.last_order_at&.to_date&.to_fs(:long) || "Never" %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <p class="text-sm text-stone-500">No members at risk right now.</p>
+    <% end %>
+  </section>
+</div>

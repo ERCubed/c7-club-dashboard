@@ -10,6 +10,9 @@ Rails.application.routes.draw do
   namespace :commerce7 do
     post "activate", to: "activations#create", as: :activate
     post "deactivate", to: "deactivations#create", as: :deactivate
+
+    # App Extension page for the Reports > Club Report placement.
+    get "dashboard", to: "dashboard#show", as: :dashboard
   end
 
   # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)

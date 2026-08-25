@@ -4,7 +4,17 @@ module Commerce7
   # this validates that JWT against Commerce7's API and resolves
   # Current.tenant/Current.staff_user before any subclass action runs.
   class ExtensionController < ApplicationController
+    layout "commerce7_extension"
+
     before_action :authenticate_staff!
+
+    # Rails sends X-Frame-Options: SAMEORIGIN by default, which blocks
+    # Commerce7's admin panel (a different origin) from framing this page at
+    # all. Commerce7's docs don't publish the exact admin origin to scope a
+    # replacement CSP frame-ancestors to (see club-dashboard-plan.md open
+    # questions), so for now this just drops the blanket deny; tighten to a
+    # specific frame-ancestors once that origin is confirmed.
+    after_action { response.headers.delete("X-Frame-Options") }
 
     rescue_from ActionController::ParameterMissing do |error|
       render plain: error.message, status: :bad_request
