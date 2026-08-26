@@ -9,19 +9,11 @@ module Commerce7
   # generically, not tied to a specific placement — so this reads
   # params[:customerId] until that's confirmed against a real embed.
   class OrderDetailCardController < ExtensionController
-    AT_RISK_MONTHS = 6
-
     def show
       customer_id = params[:customerId]
       @member = customer_id.present? ? ClubMember.includes(:order_summary).find_by(commerce7_customer_id: customer_id) : nil
-      @at_risk = @member.present? && @member.status == "Active" && at_risk?(@member.order_summary)
-      @at_risk_months = AT_RISK_MONTHS
-    end
-
-    private
-
-    def at_risk?(order_summary)
-      order_summary.nil? || order_summary.last_order_at.nil? || order_summary.last_order_at < AT_RISK_MONTHS.months.ago
+      @at_risk = @member&.at_risk? || false
+      @at_risk_months = ClubMember::DEFAULT_AT_RISK_MONTHS
     end
   end
 end
