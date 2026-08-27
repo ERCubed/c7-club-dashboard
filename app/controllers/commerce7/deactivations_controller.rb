@@ -5,8 +5,7 @@ module Commerce7
   # webhook retries are common and shouldn't fail loudly.
   class DeactivationsController < BaseController
     def create
-      tenant = Tenant.find_by(commerce7_tenant_id: params.require(:tenantId))
-      tenant&.update!(deactivated_at: Time.current)
+      Tenant.find_by(commerce7_tenant_id: params.require(:tenantId))&.deactivate!
 
       head :ok
     end

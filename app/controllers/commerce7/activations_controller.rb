@@ -6,13 +6,7 @@ module Commerce7
   # something issued per tenant.
   class ActivationsController < BaseController
     def create
-      tenant = Tenant.find_or_initialize_by(commerce7_tenant_id: params.require(:tenantId))
-      tenant.assign_attributes(
-        activated_at: Time.current,
-        deactivated_at: nil,
-        raw_activation_payload: activation_payload
-      )
-      tenant.save!
+      Tenant.activate!(commerce7_tenant_id: params.require(:tenantId), payload: activation_payload)
 
       head :ok
     end

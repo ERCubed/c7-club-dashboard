@@ -35,4 +35,35 @@ RSpec.describe Tenant, type: :model do
       expect(Tenant.active).to contain_exactly(active)
     end
   end
+
+  describe ".activate!" do
+    it "creates a new tenant with the activation payload" do
+      tenant = Tenant.activate!(commerce7_tenant_id: "winery-1", payload: { "email" => "jane@example.com" })
+
+      expect(tenant.activated_at).to be_present
+      expect(tenant.deactivated_at).to be_nil
+      expect(tenant.raw_activation_payload).to eq({ "email" => "jane@example.com" })
+    end
+
+    it "reactivates and clears deactivated_at on an existing tenant" do
+      existing = Tenant.create!(commerce7_tenant_id: "winery-1", deactivated_at: 1.day.ago)
+
+      tenant = Tenant.activate!(commerce7_tenant_id: "winery-1", payload: {})
+
+      expect(tenant).to eq(existing)
+      expect(Tenant.count).to eq(1)
+      expect(tenant.deactivated_at).to be_nil
+    end
+  end
+
+  describe "#deactivate!" do
+    it "sets deactivated_at without deleting the tenant" do
+      tenant = Tenant.create!(commerce7_tenant_id: "winery-1", activated_at: 1.day.ago)
+
+      tenant.deactivate!
+
+      expect(tenant.deactivated_at).to be_present
+      expect(Tenant.count).to eq(1)
+    end
+  end
 end
