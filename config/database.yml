@@ -90,6 +90,7 @@ production:
     database: c7_club_dashboard_production
     username: c7_club_dashboard
     password: <%= ENV["C7_CLUB_DASHBOARD_DATABASE_PASSWORD"] %>
+    host: <%= ENV["DB_HOST"] %>
   cache:
     <<: *primary_production
     database: c7_club_dashboard_production_cache

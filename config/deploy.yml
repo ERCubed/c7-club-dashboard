@@ -2,12 +2,12 @@
 service: c7_club_dashboard
 
 # Name of the container image (use your-user/app-name on external registries).
-image: c7_club_dashboard
+image: ercubed/c7_club_dashboard
 
 # Deploy to these servers.
 servers:
   web:
-    - 192.168.0.1
+    - 159.223.183.86
   # job:
   #   hosts:
   #     - 192.168.0.1
@@ -20,26 +20,24 @@ servers:
 #
 # Don't use this when deploying to multiple web servers (then you have to terminate SSL at your load balancer).
 #
-# proxy:
-#   ssl: true
-#   host: app.example.com
+proxy:
+  ssl: true
+  host: club-dashboard.cellarratdevelopment.com
 
 # Where you keep your container images.
 registry:
-  # Alternatives: hub.docker.com / registry.digitalocean.com / ghcr.io / ...
-  server: localhost:5555
-
-  # Needed for authenticated registries.
-  # username: your-user
+  server: ghcr.io
+  username: ERCubed
 
   # Always use an access token rather than real password when possible.
-  # password:
-  #   - KAMAL_REGISTRY_PASSWORD
+  password:
+    - KAMAL_REGISTRY_PASSWORD
 
 # Inject ENV variables into containers (secrets come from .kamal/secrets).
 env:
   secret:
     - RAILS_MASTER_KEY
+    - C7_CLUB_DASHBOARD_DATABASE_PASSWORD
   clear:
     # Run the Solid Queue Supervisor inside the web server's Puma process to do jobs.
     # When you start using multiple servers, you should split out job processing to a dedicated machine.
@@ -53,7 +51,7 @@ env:
 
     # Match this to any external database server to configure Active Record correctly
     # Use c7_club_dashboard-db for a db accessory server on same machine via local kamal docker network.
-    # DB_HOST: 192.168.0.2
+    DB_HOST: c7_club_dashboard-db
 
     # Log everything from Rails
     # RAILS_LOG_LEVEL: debug
@@ -95,25 +93,18 @@ builder:
 #   user: app
 
 # Use accessory services (secrets come from .kamal/secrets).
-# accessories:
-#   db:
-#     image: mysql:8.0
-#     host: 192.168.0.2
-#     # Change to 3306 to expose port to the world instead of just local network.
-#     port: "127.0.0.1:3306:3306"
-#     env:
-#       clear:
-#         MYSQL_ROOT_HOST: '%'
-#       secret:
-#         - MYSQL_ROOT_PASSWORD
-#     files:
-#       - config/mysql/production.cnf:/etc/mysql/my.cnf
-#       - db/production.sql:/docker-entrypoint-initdb.d/setup.sql
-#     directories:
-#       - data:/var/lib/mysql
-#   redis:
-#     image: valkey/valkey:8
-#     host: 192.168.0.2
-#     port: 6379
-#     directories:
-#       - data:/data
+accessories:
+  db:
+    image: postgres:17
+    host: 159.223.183.86
+    # Bound to localhost only — the app reaches it over the local kamal docker
+    # network by container name (c7_club_dashboard-db), not this published port.
+    # This is just for admin access via an SSH tunnel if you need it.
+    port: "127.0.0.1:5432:5432"
+    env:
+      clear:
+        POSTGRES_USER: c7_club_dashboard
+      secret:
+        - POSTGRES_PASSWORD
+    directories:
+      - data:/var/lib/postgresql/data
