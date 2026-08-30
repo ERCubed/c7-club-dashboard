@@ -1,0 +1,43 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+concurrency:
+  group: production_deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Install SSH deploy key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.KAMAL_DEPLOY_SSH_KEY }}
+
+      - name: Trust the production host key
+        run: ssh-keyscan -H 159.223.183.86 >> ~/.ssh/known_hosts
+
+      - name: Write Rails master key
+        run: echo -n "${{ secrets.RAILS_MASTER_KEY }}" > config/master.key
+
+      - name: Deploy with Kamal
+        env:
+          KAMAL_REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          C7_CLUB_DASHBOARD_DATABASE_PASSWORD: ${{ secrets.C7_CLUB_DASHBOARD_DATABASE_PASSWORD }}
+        run: bin/kamal deploy
