@@ -3,6 +3,7 @@ class Tenant < ApplicationRecord
   has_many :order_summaries, dependent: :destroy
 
   validates :commerce7_tenant_id, presence: true, uniqueness: true
+  validate :tier_color_overrides_are_valid_hex
 
   scope :active, -> { where(deactivated_at: nil) }
 
@@ -24,5 +25,13 @@ class Tenant < ApplicationRecord
   # shouldn't vanish just because the app was temporarily removed.
   def deactivate!
     update!(deactivated_at: Time.current)
+  end
+
+  private
+
+  def tier_color_overrides_are_valid_hex
+    tier_color_overrides.each do |tier, hex|
+      errors.add(:tier_color_overrides, "#{tier.inspect} must be a 6-digit hex color") unless hex.to_s.match?(/\A#[0-9a-fA-F]{6}\z/)
+    end
   end
 end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_20_164531) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_03_012921) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -50,6 +50,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_20_164531) do
     t.datetime "deactivated_at"
     t.string "name"
     t.jsonb "raw_activation_payload", default: {}, null: false
+    t.jsonb "tier_color_overrides", default: {}, null: false
     t.datetime "updated_at", null: false
     t.index ["commerce7_tenant_id"], name: "index_tenants_on_commerce7_tenant_id", unique: true
   end

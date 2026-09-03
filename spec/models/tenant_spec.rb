@@ -56,6 +56,21 @@ RSpec.describe Tenant, type: :model do
     end
   end
 
+  describe "#tier_color_overrides" do
+    it "is valid with 6-digit hex color values" do
+      tenant = Tenant.new(commerce7_tenant_id: "winery-1", tier_color_overrides: { "Red Club" => "#123abc" })
+
+      expect(tenant).to be_valid
+    end
+
+    it "is invalid with a non-hex value" do
+      tenant = Tenant.new(commerce7_tenant_id: "winery-1", tier_color_overrides: { "Red Club" => "nothex" })
+
+      expect(tenant).not_to be_valid
+      expect(tenant.errors[:tier_color_overrides]).to be_present
+    end
+  end
+
   describe "#deactivate!" do
     it "sets deactivated_at without deleting the tenant" do
       tenant = Tenant.create!(commerce7_tenant_id: "winery-1", activated_at: 1.day.ago)

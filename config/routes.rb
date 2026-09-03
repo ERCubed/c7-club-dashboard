@@ -17,6 +17,12 @@ Rails.application.routes.draw do
     # Tab Menu extension on Order Detail: a per-customer club membership summary.
     # Commerce7 has no Customer Detail placement, so this is the nearest fit.
     get "order-detail-card", to: "order_detail_card#show", as: :order_detail_card
+
+    # Settings tab App Extension page (registered in Commerce7's Developer
+    # Center as the app's "Settings tab iFrame URL") — lets staff assign a
+    # color per club tier, persisted per tenant.
+    get "settings", to: "settings#show", as: :settings
+    patch "settings", to: "settings#update"
   end
 
   # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)
