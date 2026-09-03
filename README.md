@@ -13,7 +13,7 @@ initial target.
 - Tailwind CSS (via `tailwindcss-rails`, no Node required)
 - Solid Queue / Solid Cache / Solid Cable (Postgres-backed, no Redis)
 - RSpec, with a SimpleCov gate requiring 100% line and branch coverage
-- Kamal for deployment (target host not yet decided)
+- Kamal for deployment, on a DigitalOcean Droplet
 
 ## Setup
 
@@ -95,4 +95,33 @@ explicitly for each tenant it processes.
 
 ## Deployment
 
-Not yet decided — Kamal is configured (`config/deploy.yml`) but no target host is set.
+Deployed via [Kamal](https://kamal-deploy.org) (`config/deploy.yml`) to a DigitalOcean
+Droplet, at `https://club-dashboard.cellarratdevelopment.com`. `kamal-proxy` terminates
+SSL (Let's Encrypt) and routes by subdomain, so the same Droplet can host multiple
+Commerce7 apps side by side — each as its own Kamal service on its own subdomain, rather
+than one combined app. Postgres runs as a Kamal accessory on the same Droplet, not a
+managed database add-on. Images are pushed to `ghcr.io` as `ercubed/c7_club_dashboard`
+(lowercase, even though the GitHub username is mixed-case).
+
+GitHub Actions (`.github/workflows/deploy.yml`) deploys automatically on every push to
+`main`, using a dedicated deploy-only SSH key (no passphrase, separate from any
+developer's personal key) stored as the `KAMAL_DEPLOY_SSH_KEY` repo secret.
+
+To deploy manually:
+
+```
+bin/kamal deploy
+```
+
+Useful aliases (see `config/deploy.yml`):
+
+```
+bin/kamal console  # Rails console on the server
+bin/kamal shell     # shell in the app container
+bin/kamal logs      # tail app logs
+bin/kamal dbc       # Postgres console
+```
+
+Note: Kamal builds from the last git **commit**, not the working tree — uncommitted
+changes to `config/deploy.yml`, `config/database.yml`, etc. won't make it into the
+image. Commit before deploying.
