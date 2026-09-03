@@ -125,6 +125,25 @@ RSpec.describe ClubMember, type: :model do
 
       expect(ClubMember.tier_colors.keys).to eq([ "Red Club" ])
     end
+
+    it "prefers a tenant's tier_color_overrides over the fallback palette" do
+      tenant = Tenant.create!(commerce7_tenant_id: "abc123", tier_color_overrides: { "Apple Club" => "#123abc" })
+      Current.tenant = tenant
+
+      colors = ClubMember.tier_colors([ "White Club", "Apple Club" ])
+
+      expect(colors["Apple Club"]).to eq("#123abc")
+      expect(colors["White Club"]).to eq(ClubMember::TIER_COLORS[1])
+    end
+
+    it "ignores a stale override for a tier not in the passed list" do
+      tenant = Tenant.create!(commerce7_tenant_id: "abc123", tier_color_overrides: { "Retired Club" => "#123abc" })
+      Current.tenant = tenant
+
+      colors = ClubMember.tier_colors([ "White Club" ])
+
+      expect(colors).not_to have_key("Retired Club")
+    end
   end
 
   describe "#at_risk?" do

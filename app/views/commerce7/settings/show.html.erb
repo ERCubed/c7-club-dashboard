@@ -1,0 +1,40 @@
+<% content_for :title, "Tier Colors" %>
+
+<div class="max-w-2xl mx-auto px-6 py-8 space-y-6">
+  <header>
+    <h1 class="text-xl font-semibold text-stone-900">Club Tier Colors</h1>
+    <p class="text-sm text-stone-500">Choose the color shown for each tier on the Club Dashboard.</p>
+  </header>
+
+  <% if params[:saved] %>
+    <p class="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">Saved.</p>
+  <% end %>
+  <% if @error %>
+    <p class="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2"><%= @error %></p>
+  <% end %>
+
+  <% if @tiers.empty? %>
+    <p class="text-sm text-stone-500">No active club tiers yet — colors will appear here once members sync.</p>
+  <% else %>
+    <%= form_with url: commerce7_settings_path, method: :patch, class: "space-y-3" do %>
+      <%= hidden_field_tag :tenantId, params[:tenantId] %>
+      <%= hidden_field_tag :account, params[:account] %>
+
+      <% @tiers.each do |tier| %>
+        <div class="flex items-center justify-between gap-3 rounded-lg border border-stone-200 p-3">
+          <span class="text-sm text-stone-700 truncate"><%= tier %></span>
+          <div class="flex items-center gap-3">
+            <label class="text-xs text-stone-500 flex items-center gap-1">
+              <%= check_box_tag "clear_#{tier}", "1", false, onchange: "this.form.querySelector('[name=\"tier_colors[#{tier}]\"]').disabled = this.checked" %>
+              Use default
+            </label>
+            <input type="color" name="tier_colors[<%= tier %>]" value="<%= @tier_colors[tier] %>"
+                   class="h-8 w-12 rounded border border-stone-300" aria-label="Color for <%= tier %>">
+          </div>
+        </div>
+      <% end %>
+
+      <button type="submit" class="rounded bg-stone-900 text-white px-4 py-2 text-sm">Save colors</button>
+    <% end %>
+  <% end %>
+</div>
