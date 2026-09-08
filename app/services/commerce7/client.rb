@@ -50,6 +50,15 @@ module Commerce7
       each_record("order", "orders", &block)
     end
 
+    # Single-order lookup (as opposed to each_order's bulk listing) for the
+    # Order Detail Tab Menu extension, which only gets an orderId from
+    # Commerce7 — confirmed via a real trial-winery embed, see
+    # club-dashboard-plan.md. Returns the order hash, which carries a
+    # top-level customerId same as club-membership's.
+    def fetch_order(order_id)
+      get("order/#{order_id}", {})
+    end
+
     private
 
     attr_reader :tenant, :base_url, :sleeper

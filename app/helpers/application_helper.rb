@@ -1,4 +1,14 @@
 module ApplicationHelper
+  # Commerce7's admin has no page we can deep-link straight to an order (we
+  # don't sync order ids, only customer-level summaries), so this links out
+  # to the customer's own profile instead — confirmed against a real
+  # ercubed admin URL, and Current.tenant.commerce7_tenant_id is the same
+  # subdomain-style identifier already used as the API `tenant` header in
+  # Commerce7::Client, not an opaque internal id.
+  def commerce7_customer_url(customer_id)
+    "https://#{Current.tenant.commerce7_tenant_id}.admin.platform.commerce7.com/crm/customer/#{customer_id}/overview"
+  end
+
   def warning_icon(css_class: "size-4 shrink-0")
     tag.svg(xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 20 20", fill: "#fab219", class: css_class, "aria-hidden": "true") do
       tag.path(
