@@ -77,8 +77,10 @@
             <% @top_spenders.each do |member| %>
               <tr class="border-b border-stone-100 last:border-0">
                 <td class="px-4 py-2">
-                  <div class="text-stone-900"><%= member.name.presence || "—" %></div>
-                  <div class="text-stone-500 text-xs"><%= member.email %></div>
+                  <%= link_to commerce7_customer_url(member.commerce7_customer_id), target: "_blank", rel: "noopener noreferrer", class: "hover:underline" do %>
+                    <div class="text-stone-900"><%= member.name.presence || "—" %></div>
+                    <div class="text-stone-500 text-xs"><%= member.email %></div>
+                  <% end %>
                 </td>
                 <td class="px-4 py-2 text-stone-700"><%= member.club_tier %></td>
                 <td class="px-4 py-2 text-right text-stone-900" style="font-variant-numeric: tabular-nums;">
@@ -124,8 +126,10 @@
             <% @at_risk_members.each do |member| %>
               <tr class="border-b border-stone-100 last:border-0">
                 <td class="px-4 py-2">
-                  <div class="text-stone-900"><%= member.name.presence || "—" %></div>
-                  <div class="text-stone-500 text-xs"><%= member.email %></div>
+                  <%= link_to commerce7_customer_url(member.commerce7_customer_id), target: "_blank", rel: "noopener noreferrer", class: "hover:underline" do %>
+                    <div class="text-stone-900"><%= member.name.presence || "—" %></div>
+                    <div class="text-stone-500 text-xs"><%= member.email %></div>
+                  <% end %>
                 </td>
                 <td class="px-4 py-2 text-stone-700"><%= member.club_tier %></td>
                 <td class="px-4 py-2 text-right text-stone-700">

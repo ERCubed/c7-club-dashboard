@@ -17,10 +17,16 @@ RSpec.describe "Commerce7 order detail card", type: :request do
     Current.tenant = nil
   end
 
+  def stub_order(order_id:, customer_id:)
+    stub_request(:get, "https://api.commerce7.com/v1/order/#{order_id}")
+      .to_return(status: 200, body: { "id" => order_id, "customerId" => customer_id }.to_json, headers: json_headers)
+  end
+
   it "shows the club summary for a known customer" do
     create_member(customer_id: "cust-1", lifetime_value_cents: 24_110, order_count: 5, last_order_at: 1.week.ago)
+    stub_order(order_id: "order-1", customer_id: "cust-1")
 
-    get commerce7_order_detail_card_path, params: { tenantId: "winery-1", account: "jwt-token", customerId: "cust-1" }
+    get commerce7_order_detail_card_path, params: { tenantId: "winery-1", account: "jwt-token", orderId: "order-1" }
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("Red Club")
@@ -31,30 +37,54 @@ RSpec.describe "Commerce7 order detail card", type: :request do
 
   it "flags an active member who hasn't ordered recently" do
     create_member(customer_id: "cust-1", last_order_at: 7.months.ago)
+    stub_order(order_id: "order-1", customer_id: "cust-1")
 
-    get commerce7_order_detail_card_path, params: { tenantId: "winery-1", account: "jwt-token", customerId: "cust-1" }
+    get commerce7_order_detail_card_path, params: { tenantId: "winery-1", account: "jwt-token", orderId: "order-1" }
 
     expect(response.body).to include("At risk")
   end
 
   it "does not flag a cancelled member as at risk" do
     create_member(customer_id: "cust-1", status: "Cancelled", last_order_at: 2.years.ago)
+    stub_order(order_id: "order-1", customer_id: "cust-1")
 
-    get commerce7_order_detail_card_path, params: { tenantId: "winery-1", account: "jwt-token", customerId: "cust-1" }
+    get commerce7_order_detail_card_path, params: { tenantId: "winery-1", account: "jwt-token", orderId: "order-1" }
 
     expect(response.body).to include("Cancelled")
     expect(response.body).not_to include("At risk")
   end
 
-  it "shows an empty state when the customer is not a club member" do
-    get commerce7_order_detail_card_path, params: { tenantId: "winery-1", account: "jwt-token", customerId: "unknown-customer" }
+  it "shows an empty state when the order's customer is not a club member" do
+    stub_order(order_id: "order-1", customer_id: "unknown-customer")
+
+    get commerce7_order_detail_card_path, params: { tenantId: "winery-1", account: "jwt-token", orderId: "order-1" }
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("Not a Commerce7 club member.")
   end
 
-  it "shows an empty state when no customerId is present" do
+  it "shows an empty state when no orderId is present" do
     get commerce7_order_detail_card_path, params: { tenantId: "winery-1", account: "jwt-token" }
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Not a Commerce7 club member.")
+  end
+
+  it "shows an empty state when the order has no customerId" do
+    stub_request(:get, "https://api.commerce7.com/v1/order/order-1")
+      .to_return(status: 200, body: { "id" => "order-1" }.to_json, headers: json_headers)
+
+    get commerce7_order_detail_card_path, params: { tenantId: "winery-1", account: "jwt-token", orderId: "order-1" }
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Not a Commerce7 club member.")
+  end
+
+  it "shows an empty state when the order lookup fails" do
+    stub_request(:get, "https://api.commerce7.com/v1/order/order-1")
+      .to_return(status: 500, body: "boom")
+
+    get commerce7_order_detail_card_path, params: { tenantId: "winery-1", account: "jwt-token", orderId: "order-1" }
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("Not a Commerce7 club member.")
