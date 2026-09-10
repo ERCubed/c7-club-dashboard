@@ -1,6 +1,12 @@
 class ClubMember < ApplicationRecord
   include TenantScoped
 
+  # PII synced from Commerce7 — encrypted at rest since neither is ever
+  # queried by value (top_spenders/at_risk/tier_breakdown all key off
+  # commerce7_customer_id, status, or the order_summary association), so
+  # there's no need for the deterministic variant.
+  encrypts :name, :email
+
   DEFAULT_AT_RISK_MONTHS = 6
 
   # Reference categorical palette (see the dataviz skill's palette.md) —

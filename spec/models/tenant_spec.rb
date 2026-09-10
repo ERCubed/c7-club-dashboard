@@ -56,6 +56,19 @@ RSpec.describe Tenant, type: :model do
     end
   end
 
+  describe "encryption" do
+    it "stores raw_activation_payload as ciphertext at rest, not plaintext JSON" do
+      tenant = Tenant.activate!(commerce7_tenant_id: "winery-1", payload: { "email" => "jane@example.com" })
+
+      raw_value = ActiveRecord::Base.connection.select_value(
+        "SELECT raw_activation_payload FROM tenants WHERE id = #{tenant.id}"
+      )
+
+      expect(raw_value).not_to include("jane@example.com")
+      expect(tenant.reload.raw_activation_payload).to eq({ "email" => "jane@example.com" })
+    end
+  end
+
   describe "#tier_color_overrides" do
     it "is valid with 6-digit hex color values" do
       tenant = Tenant.new(commerce7_tenant_id: "winery-1", tier_color_overrides: { "Red Club" => "#123abc" })

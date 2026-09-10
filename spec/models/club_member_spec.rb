@@ -146,6 +146,23 @@ RSpec.describe ClubMember, type: :model do
     end
   end
 
+  describe "encryption" do
+    it "stores name and email as ciphertext at rest, not plaintext" do
+      tenant = Tenant.create!(commerce7_tenant_id: "abc123")
+      Current.tenant = tenant
+      member = ClubMember.create!(tenant: tenant, commerce7_customer_id: "cust-1", name: "Jane Doe", email: "jane@example.com")
+
+      raw_name, raw_email = ActiveRecord::Base.connection.select_rows(
+        "SELECT name, email FROM club_members WHERE id = #{member.id}"
+      ).first
+
+      expect(raw_name).not_to eq("Jane Doe")
+      expect(raw_email).not_to eq("jane@example.com")
+      expect(member.reload.name).to eq("Jane Doe")
+      expect(member.reload.email).to eq("jane@example.com")
+    end
+  end
+
   describe "#at_risk?" do
     it "is false for a cancelled member regardless of order history" do
       tenant = Tenant.create!(commerce7_tenant_id: "abc123")
