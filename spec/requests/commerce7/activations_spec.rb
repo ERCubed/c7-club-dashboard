@@ -18,6 +18,7 @@ RSpec.describe "Commerce7 activations", type: :request do
     expect(tenant.deactivated_at).to be_nil
     expect(tenant.raw_activation_payload["tenantId"]).to eq("winery-1")
     expect(tenant.raw_activation_payload["email"]).to eq("jane@example.com")
+    expect(AuditEvent.last).to have_attributes(event_type: "tenant_activated", success: true, commerce7_tenant_id: "winery-1")
   end
 
   it "enqueues a backfill sync scoped to the newly activated tenant" do
@@ -49,6 +50,17 @@ RSpec.describe "Commerce7 activations", type: :request do
 
     expect(response).to have_http_status(:unauthorized)
     expect(Tenant.find_by(commerce7_tenant_id: "winery-1")).to be_nil
+  end
+
+  it "records an AuditEvent for a failed authentication attempt" do
+    bad_headers = { "HTTP_AUTHORIZATION" => ActionController::HttpAuthentication::Basic.encode_credentials("wrong", "wrong") }
+
+    post commerce7_activate_path, params: { tenantId: "winery-1" }, headers: bad_headers
+
+    event = AuditEvent.last
+    expect(event.event_type).to eq("commerce7_server_auth")
+    expect(event.success).to be false
+    expect(event.commerce7_tenant_id).to eq("winery-1")
   end
 
   it "returns 401 when the password is wrong but the username is right" do

@@ -51,6 +51,12 @@ RSpec.describe "Commerce7 settings", type: :request do
 
       expect(response).to redirect_to(commerce7_settings_path(tenantId: "winery-1", account: "jwt-token", saved: true))
       expect(tenant.reload.tier_color_overrides).to eq({ "Red Club" => "#123abc" })
+      expect(AuditEvent.last).to have_attributes(
+        event_type: "tier_colors_updated",
+        success: true,
+        actor: "jason@example.com",
+        commerce7_tenant_id: "winery-1"
+      )
     end
 
     it "re-renders with 422 and does not persist an invalid hex" do
@@ -61,6 +67,7 @@ RSpec.describe "Commerce7 settings", type: :request do
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include("Enter a valid hex color")
       expect(tenant.reload.tier_color_overrides).to eq({})
+      expect(AuditEvent.last).to have_attributes(event_type: "tier_colors_updated", success: false)
     end
 
     it "clears a previously saved override when submitted blank" do

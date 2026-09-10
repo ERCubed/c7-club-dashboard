@@ -27,6 +27,10 @@ module Commerce7
   # Every handler here is naturally idempotent — re-upserting or re-deleting
   # the same record twice ends at the same state — since Commerce7 doesn't
   # document a delivery/event id to dedupe against in the first place.
+  #
+  # Each handled event writes an AuditEvent, using the payload's own "user"
+  # field as the actor — the one piece of staff identity Commerce7 actually
+  # attaches to a webhook delivery.
   class WebhooksController < BaseController
     # `action` is also the name Rails reserves for the controller action
     # itself (routing sets params[:action] = "create" on every request
@@ -40,7 +44,9 @@ module Commerce7
       return head :bad_request unless body["tenantId"].present? && body["object"].present? && body["action"].present?
 
       tenant = Tenant.active.find_by(commerce7_tenant_id: body["tenantId"])
-      handle(tenant, object: body["object"], action: body["action"], payload: body["payload"] || {}) if tenant
+      if tenant
+        handle(tenant, object: body["object"], action: body["action"], payload: body["payload"] || {}, actor: body["user"])
+      end
 
       head :ok
     rescue JSON::ParserError
@@ -49,16 +55,23 @@ module Commerce7
 
     private
 
-    def handle(tenant, object:, action:, payload:)
+    def handle(tenant, object:, action:, payload:, actor:)
       case object
       when "Club Membership"
         case action
         when "Create", "Update" then Commerce7::SyncJob.perform_later(tenant)
         when "Delete" then remove_member(tenant, payload["customerId"])
+        else return
         end
       when "Customer"
-        remove_member(tenant, payload["customerId"]) if action == "Delete"
+        return unless action == "Delete"
+
+        remove_member(tenant, payload["customerId"])
+      else
+        return
       end
+
+      audit_webhook!(tenant, object: object, action: action, actor: actor, customer_id: payload["customerId"])
     end
 
     def remove_member(tenant, customer_id)
@@ -69,6 +82,17 @@ module Commerce7
       OrderSummary.find_by(commerce7_customer_id: customer_id)&.destroy
     ensure
       Current.tenant = nil
+    end
+
+    def audit_webhook!(tenant, object:, action:, actor:, customer_id:)
+      AuditEvent.record!(
+        event_type: "webhook_#{object.parameterize(separator: '_')}_#{action.downcase}",
+        success: true,
+        actor: actor,
+        commerce7_tenant_id: tenant.commerce7_tenant_id,
+        origin_ip: request.remote_ip,
+        metadata: { customer_id: customer_id }.compact
+      )
     end
   end
 end

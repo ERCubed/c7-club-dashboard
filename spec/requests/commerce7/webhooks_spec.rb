@@ -8,9 +8,9 @@ RSpec.describe "Commerce7 webhooks", type: :request do
   let!(:password) { Rails.application.credentials.dig(:commerce7, :webhook_password) }
   let(:auth_headers) { { "HTTP_AUTHORIZATION" => ActionController::HttpAuthentication::Basic.encode_credentials(username, password) } }
 
-  def post_webhook(object:, action:, payload: {}, tenant_id: "winery-1")
+  def post_webhook(object:, action:, payload: {}, tenant_id: "winery-1", user: "staff@example.com")
     post commerce7_webhooks_path,
-      params: { tenantId: tenant_id, object: object, action: action, payload: payload },
+      params: { tenantId: tenant_id, object: object, action: action, payload: payload, user: user },
       headers: auth_headers,
       as: :json
   end
@@ -29,6 +29,7 @@ RSpec.describe "Commerce7 webhooks", type: :request do
       as: :json
 
     expect(response).to have_http_status(:unauthorized)
+    expect(AuditEvent.last).to have_attributes(event_type: "commerce7_server_auth", success: false, commerce7_tenant_id: "winery-1")
   end
 
   it "returns 400 when a required top-level field is missing" do
@@ -66,10 +67,17 @@ RSpec.describe "Commerce7 webhooks", type: :request do
   describe "Club Membership Create/Update" do
     it "enqueues a SyncJob scoped to the tenant, rather than upserting directly from the payload" do
       expect {
-        post_webhook(object: "Club Membership", action: "Create", payload: { customerId: "cust-1" })
+        post_webhook(object: "Club Membership", action: "Create", payload: { customerId: "cust-1" }, user: "jason@example.com")
       }.to have_enqueued_job(Commerce7::SyncJob).with(tenant)
 
       expect(response).to have_http_status(:ok)
+      expect(AuditEvent.last).to have_attributes(
+        event_type: "webhook_club_membership_create",
+        success: true,
+        actor: "jason@example.com",
+        commerce7_tenant_id: "winery-1",
+        metadata: { "customer_id" => "cust-1" }
+      )
     end
 
     it "does the same for Update" do
@@ -102,6 +110,7 @@ RSpec.describe "Commerce7 webhooks", type: :request do
       Current.tenant = tenant
       expect(ClubMember.find_by(commerce7_customer_id: "cust-1")).to be_nil
       expect(OrderSummary.find_by(commerce7_customer_id: "cust-1")).to be_nil
+      expect(AuditEvent.last).to have_attributes(event_type: "webhook_club_membership_delete", success: true, commerce7_tenant_id: "winery-1")
     end
 
     it "is idempotent — deleting an already-gone member is a safe no-op" do
@@ -127,6 +136,7 @@ RSpec.describe "Commerce7 webhooks", type: :request do
       Current.tenant = tenant
       expect(ClubMember.find_by(commerce7_customer_id: "cust-1")).to be_nil
       expect(OrderSummary.find_by(commerce7_customer_id: "cust-1")).to be_nil
+      expect(AuditEvent.last).to have_attributes(event_type: "webhook_customer_delete", success: true, commerce7_tenant_id: "winery-1")
     end
 
     it "does not delete anything for a Customer Create/Update event" do

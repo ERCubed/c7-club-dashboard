@@ -21,8 +21,10 @@ module Commerce7
     # constraint back to tenants with no ON DELETE CASCADE (confirmed by
     # reproducing the ActiveRecord::InvalidForeignKey before adding this).
     def purge(tenant)
+      commerce7_tenant_id = tenant.commerce7_tenant_id
       Current.tenant = tenant
       tenant.destroy!
+      AuditEvent.record!(event_type: "tenant_data_purged", success: true, commerce7_tenant_id: commerce7_tenant_id)
     ensure
       Current.tenant = nil
     end

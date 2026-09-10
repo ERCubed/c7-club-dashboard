@@ -5,7 +5,11 @@ module Commerce7
   # webhook retries are common and shouldn't fail loudly.
   class DeactivationsController < BaseController
     def create
-      Tenant.find_by(commerce7_tenant_id: params.require(:tenantId))&.deactivate!
+      tenant = Tenant.find_by(commerce7_tenant_id: params.require(:tenantId))
+      if tenant
+        tenant.deactivate!
+        AuditEvent.record!(event_type: "tenant_deactivated", success: true, commerce7_tenant_id: tenant.commerce7_tenant_id, origin_ip: request.remote_ip)
+      end
 
       head :ok
     end

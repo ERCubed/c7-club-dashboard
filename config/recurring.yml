@@ -27,3 +27,7 @@ production:
     class: Commerce7::PurgeDeactivatedTenantsJob
     queue: default
     schedule: every day at 3am
+  commerce7_purge_expired_audit_events:
+    class: Commerce7::PurgeExpiredAuditEventsJob
+    queue: default
+    schedule: every day at 3am

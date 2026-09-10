@@ -12,6 +12,7 @@ RSpec.describe "Commerce7 deactivations", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(tenant.reload.deactivated_at).to be_present
+    expect(AuditEvent.last).to have_attributes(event_type: "tenant_deactivated", success: true, commerce7_tenant_id: "winery-1")
   end
 
   it "is a no-op for an unrecognized tenantId" do

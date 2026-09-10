@@ -20,6 +20,7 @@ RSpec.describe Commerce7::PurgeDeactivatedTenantsJob do
     expect(Tenant.exists?(tenant.id)).to be false
     expect(ClubMember.unscoped.where(tenant_id: tenant.id)).to be_empty
     expect(OrderSummary.unscoped.where(tenant_id: tenant.id)).to be_empty
+    expect(AuditEvent.last).to have_attributes(event_type: "tenant_data_purged", success: true, commerce7_tenant_id: "winery-old")
   end
 
   it "leaves an active tenant and its data alone" do
