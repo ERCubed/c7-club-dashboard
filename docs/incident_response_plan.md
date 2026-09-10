@@ -6,7 +6,8 @@ Covers c7-club-dashboard: a single-tenant-at-launch Commerce7 App Extension, dep
 
 | Role | Who | Contact |
 |---|---|---|
-| Primary maintainer / incident owner | Eric Roberts | eric@ercubed.com |
+| Primary maintainer / incident owner | Eric Roberts | eric@cellarratdevelopment.com |
+| App/team contact | — | admin@cellarratdevelopment.com |
 | Commerce7 (platform partner) | Commerce7 support | support@commerce7.com |
 | Infrastructure provider | DigitalOcean | via DO support console on the account owning the droplet |
 | Source control / CI | GitHub (ERCubed/c7-club-dashboard) | via GitHub support if account-level compromise is suspected |
