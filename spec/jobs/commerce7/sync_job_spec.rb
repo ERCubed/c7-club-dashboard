@@ -106,6 +106,21 @@ RSpec.describe Commerce7::SyncJob do
     expect(ClubMember.count).to eq(0)
   end
 
+  it "syncs only the given tenant when one is passed, ignoring other active tenants" do
+    target = Tenant.create!(commerce7_tenant_id: "winery-target")
+    other = Tenant.create!(commerce7_tenant_id: "winery-other")
+    stub_memberships(target, [ membership(customer_id: "cust-target", club_title: "Red Club") ])
+    other_stub = stub_memberships(other, [ membership(customer_id: "cust-other", club_title: "Red Club") ])
+
+    described_class.perform_now(target)
+
+    expect(other_stub).not_to have_been_requested
+    Current.tenant = target
+    expect(ClubMember.find_by(commerce7_customer_id: "cust-target")).to be_present
+    Current.tenant = other
+    expect(ClubMember.find_by(commerce7_customer_id: "cust-other")).to be_nil
+  end
+
   it "logs and continues past a tenant whose sync fails" do
     failing = Tenant.create!(commerce7_tenant_id: "winery-failing")
     healthy = Tenant.create!(commerce7_tenant_id: "winery-healthy")

@@ -13,10 +13,16 @@ production:
   clear_solid_queue_finished_jobs:
     command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
     schedule: every hour at minute 12
+  # Commerce7::WebhooksController now handles Club Membership create/update/
+  # delete in near-real-time; this is a reconciliation safety net rather
+  # than the primary sync path, since Commerce7 auto-disables a Web Hook
+  # after 48 hours of failing deliveries with no automatic re-enable
+  # (developer.commerce7.com/docs/webhooks) — a silently disabled webhook
+  # would otherwise mean this tenant simply stops updating with no signal.
   commerce7_sync:
     class: Commerce7::SyncJob
     queue: default
-    schedule: every hour
+    schedule: every day at 4am
   commerce7_purge_deactivated_tenants:
     class: Commerce7::PurgeDeactivatedTenantsJob
     queue: default

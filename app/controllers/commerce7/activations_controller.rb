@@ -6,7 +6,12 @@ module Commerce7
   # something issued per tenant.
   class ActivationsController < BaseController
     def create
-      Tenant.activate!(commerce7_tenant_id: params.require(:tenantId), payload: activation_payload)
+      tenant = Tenant.activate!(commerce7_tenant_id: params.require(:tenantId), payload: activation_payload)
+
+      # Backfill: Commerce7's Web Hooks (see WebhooksController) only fire on
+      # future changes, not a newly (re)installed tenant's pre-existing club
+      # memberships — this one-time sync is what actually populates those.
+      Commerce7::SyncJob.perform_later(tenant)
 
       head :ok
     end
