@@ -36,6 +36,32 @@ RSpec.describe Tenant, type: :model do
     end
   end
 
+  describe ".pending_deletion" do
+    it "excludes an active tenant" do
+      Tenant.create!(commerce7_tenant_id: "active-tenant")
+
+      expect(Tenant.pending_deletion).to be_empty
+    end
+
+    it "excludes a tenant deactivated less than 30 days ago" do
+      Tenant.create!(commerce7_tenant_id: "recently-deactivated", deactivated_at: 29.days.ago)
+
+      expect(Tenant.pending_deletion).to be_empty
+    end
+
+    it "includes a tenant deactivated exactly 30 days ago" do
+      tenant = Tenant.create!(commerce7_tenant_id: "at-threshold", deactivated_at: 30.days.ago)
+
+      expect(Tenant.pending_deletion).to contain_exactly(tenant)
+    end
+
+    it "includes a tenant deactivated more than 30 days ago" do
+      tenant = Tenant.create!(commerce7_tenant_id: "long-deactivated", deactivated_at: 31.days.ago)
+
+      expect(Tenant.pending_deletion).to contain_exactly(tenant)
+    end
+  end
+
   describe ".activate!" do
     it "creates a new tenant with the activation payload" do
       tenant = Tenant.activate!(commerce7_tenant_id: "winery-1", payload: { "email" => "jane@example.com" })

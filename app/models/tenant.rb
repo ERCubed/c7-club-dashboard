@@ -10,7 +10,16 @@ class Tenant < ApplicationRecord
   validates :commerce7_tenant_id, presence: true, uniqueness: true
   validate :tier_color_overrides_are_valid_hex
 
+  # Commerce7's app security policy requires customer data deleted within 30
+  # days of app termination — see Commerce7::PurgeDeactivatedTenantsJob,
+  # which hard-deletes (Tenant, and via dependent: :destroy, its
+  # ClubMember/OrderSummary rows) any tenant still deactivated after this
+  # window. Kept short of 30 days deliberately: a tenant reactivated via
+  # Tenant.activate! before this elapses keeps all its synced data.
+  DATA_RETENTION_DAYS = 30
+
   scope :active, -> { where(deactivated_at: nil) }
+  scope :pending_deletion, -> { where.not(deactivated_at: nil).where(deactivated_at: ..DATA_RETENTION_DAYS.days.ago) }
 
   # Handles both first install and a reinstall of a previously deactivated
   # tenant (find_or_initialize_by, not create!) — activation always clears
