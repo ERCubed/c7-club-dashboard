@@ -95,4 +95,15 @@ RSpec.describe "Commerce7 dashboard", type: :request do
 
     expect(response).to have_http_status(:forbidden)
   end
+
+  it "shows a friendly message when Commerce7 rejects the staff token" do
+    stub_request(:get, "https://api.commerce7.com/v1/account/user")
+      .to_return(status: 401, body: { "statusCode" => 401, "type" => "unauthorized" }.to_json, headers: json_headers)
+
+    get commerce7_dashboard_path, params: { tenantId: "winery-1", account: "bad-token" }
+
+    expect(response).to have_http_status(:unauthorized)
+    expect(response.body).to include("We couldn't verify your Commerce7 login")
+    expect(response.body).to include("support@commerce7.com")
+  end
 end

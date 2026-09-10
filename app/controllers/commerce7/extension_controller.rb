@@ -30,7 +30,7 @@ module Commerce7
       Current.staff_user = Commerce7::AccountClient.new.fetch_user(tenant_id: tenant_id, token: params.require(:account))
       Current.tenant = tenant
     rescue Commerce7::AccountClient::AuthenticationError
-      head :unauthorized
+      render "commerce7/extension/unauthorized", status: :unauthorized
     end
   end
 end
