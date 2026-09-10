@@ -1,4 +1,9 @@
 class Tenant < ApplicationRecord
+  # Per Commerce7's activation docs, this jsonb blob carries the installing
+  # staff member's first name, last name, and email — PII, encrypted at
+  # rest even though it's write-once and never queried by value.
+  encrypts :raw_activation_payload
+
   has_many :club_members, dependent: :destroy
   has_many :order_summaries, dependent: :destroy
 

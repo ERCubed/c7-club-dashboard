@@ -33,6 +33,15 @@ Rails.application.configure do
   # Skip http-to-https redirect for the default health check endpoint.
   # config.ssl_options = { redirect: { exclude: ->(request) { request.path == "/up" } } }
 
+  # Temporary bridge for rows written before ClubMember#name/#email and
+  # Tenant#raw_activation_payload gained `encrypts` — lets those old
+  # plaintext values still be read instead of raising on decrypt. Every
+  # ClubMember row gets rewritten (and thus encrypted) by the next hourly
+  # Commerce7::SyncJob run; Tenant#raw_activation_payload is write-once at
+  # activation, so drop this once the one already-installed tenant's row is
+  # manually re-saved to pick up encryption.
+  config.active_record.encryption.support_unencrypted_data = true
+
   # Log to STDOUT with the current request id as a default log tag.
   config.log_tags = [ :request_id ]
   config.logger   = ActiveSupport::TaggedLogging.logger(STDOUT)
