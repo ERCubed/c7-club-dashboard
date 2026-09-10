@@ -1,10 +1,17 @@
 module Commerce7
-  # Base for Commerce7 webhook receivers (activation, deactivation). These are
-  # server-to-server POSTs, not browser requests, so this skips the CSRF check
-  # and doesn't inherit ApplicationController's allow_browser restriction.
+  # Base for Commerce7 server-to-server POSTs: the app-wide Install/Uninstall
+  # URLs (activation, deactivation) and, per Commerce7::WebhooksController,
+  # its per-tenant Web Hooks feature. Not browser requests, so this skips the
+  # CSRF check and doesn't inherit ApplicationController's allow_browser
+  # restriction.
   #
-  # Auth is HTTP Basic, per Commerce7's docs: install/uninstall URLs support an
-  # optional username/password configured in their dashboard's "Advanced" section.
+  # Auth is HTTP Basic in both cases, per Commerce7's docs: Install/Uninstall
+  # URLs support an optional username/password configured in their
+  # dashboard's "Advanced" section, and Web Hooks support the same in each
+  # tenant's own Developer > Web Hooks setup — reusing this one shared
+  # credential pair for both, which every tenant's Web Hook must be
+  # configured with. Revisit with per-tenant secrets if that shared blast
+  # radius becomes a real concern once there's more than one live tenant.
   class BaseController < ActionController::Base
     skip_before_action :verify_authenticity_token, raise: false
 

@@ -20,6 +20,12 @@ RSpec.describe "Commerce7 activations", type: :request do
     expect(tenant.raw_activation_payload["email"]).to eq("jane@example.com")
   end
 
+  it "enqueues a backfill sync scoped to the newly activated tenant" do
+    expect {
+      post commerce7_activate_path, params: { tenantId: "winery-1" }, headers: auth_headers
+    }.to have_enqueued_job(Commerce7::SyncJob).with { |tenant| expect(tenant.commerce7_tenant_id).to eq("winery-1") }
+  end
+
   it "reactivates an existing tenant and clears deactivated_at" do
     tenant = Tenant.create!(commerce7_tenant_id: "winery-1", deactivated_at: 1.day.ago)
 

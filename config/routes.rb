@@ -11,6 +11,11 @@ Rails.application.routes.draw do
     post "activate", to: "activations#create", as: :activate
     post "deactivate", to: "deactivations#create", as: :deactivate
 
+    # Commerce7's Web Hooks feature, configured per tenant (each winery's own
+    # Developer > Web Hooks admin), not the app-wide Install/Uninstall URLs
+    # above — see Commerce7::WebhooksController.
+    post "webhooks", to: "webhooks#create", as: :webhooks
+
     # App Extension page for the Reports > Club Report placement.
     get "dashboard", to: "dashboard#show", as: :dashboard
 

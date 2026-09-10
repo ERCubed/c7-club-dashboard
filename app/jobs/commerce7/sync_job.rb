@@ -10,8 +10,19 @@ module Commerce7
   class SyncJob < ApplicationJob
     queue_as :default
 
-    def perform
-      Tenant.active.find_each { |tenant| sync_tenant(tenant) }
+    # An optional single tenant scopes this to just that tenant — used by
+    # Commerce7::WebhooksController to react to a Club Membership
+    # create/update event without needing to trust that event's payload
+    # shape (unconfirmed whether it embeds the same nested customer/club
+    # sub-objects the bulk GET /club-membership list does, or just raw
+    # foreign keys — see WebhooksController). Re-running the full,
+    # already-proven upsert for one tenant sidesteps that risk entirely.
+    # With no argument, syncs every active tenant (the original recurring
+    # behavior, now a daily reconciliation safety net rather than the
+    # primary sync path — see config/recurring.yml).
+    def perform(tenant = nil)
+      tenants = tenant ? [ tenant ] : Tenant.active
+      tenants.each { |t| sync_tenant(t) }
     end
 
     private
