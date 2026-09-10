@@ -7,11 +7,10 @@ module Commerce7
   #
   # Auth is HTTP Basic in both cases, per Commerce7's docs: Install/Uninstall
   # URLs support an optional username/password configured in their
-  # dashboard's "Advanced" section, and Web Hooks support the same in each
-  # tenant's own Developer > Web Hooks setup — reusing this one shared
-  # credential pair for both, which every tenant's Web Hook must be
-  # configured with. Revisit with per-tenant secrets if that shared blast
-  # radius becomes a real concern once there's more than one live tenant.
+  # dashboard's "Advanced" section, and a Web Hook registered in the same
+  # Developer Center app version (Step 1. APIs & Webhooks) supports the
+  # same "Advanced Authentication" — both are a single app-wide credential
+  # pair we set once, not something each tenant configures.
   class BaseController < ActionController::Base
     skip_before_action :verify_authenticity_token, raise: false
 

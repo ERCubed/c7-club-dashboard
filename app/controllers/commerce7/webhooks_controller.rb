@@ -1,11 +1,17 @@
 module Commerce7
-  # Receives Commerce7's Web Hooks — configured per tenant, in each winery's
-  # own Developer > Web Hooks admin page (distinct from the app-wide
-  # Install/Uninstall URLs BaseController's other subclasses serve). Per
-  # Commerce7's docs (developer.commerce7.com/docs/webhooks), the body is
-  # {object, action, payload, user, tenantId}; object/action cover far more
-  # than we act on (Order, Product, Tag, ...), so anything we don't
-  # recognize is silently a no-op rather than an error.
+  # Receives Commerce7's Web Hooks — configured once, app-wide, in the
+  # Developer Center's app version under "Step 1. APIs & Webhooks", NOT
+  # per-tenant. Per Commerce7's docs (developer.commerce7.com/docs/
+  # app-apis-webhooks), a webhook registered there applies automatically to
+  # every tenant that installs the app, no per-winery setup required — this
+  # is a different, app-level mechanism from a store's own independent
+  # "Developer > Web Hooks" admin page (documentation.commerce7.com/
+  # configuring-your-webhook), which is for a winery's own integrations,
+  # unrelated to marketplace apps like this one. Per Commerce7's docs
+  # (developer.commerce7.com/docs/webhooks), the body is {object, action,
+  # payload, user, tenantId}; object/action cover far more than we act on
+  # (Order, Product, Tag, ...), so anything we don't recognize is silently
+  # a no-op rather than an error.
   #
   # Create/Update for Club Membership re-triggers Commerce7::SyncJob scoped
   # to just that tenant rather than upserting straight from this payload:
