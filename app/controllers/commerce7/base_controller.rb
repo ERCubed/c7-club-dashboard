@@ -22,15 +22,33 @@ module Commerce7
 
     private
 
+    # Deliberately not authenticate_or_request_with_http_basic: that method's
+    # return value is truthy even on failure (it's a bare
+    # `response_body = message` assignment under the hood — see
+    # ActionController::HttpAuthentication::Basic::ProtectedMethods#authentication_request),
+    # so it can't be used as a success/failure signal for auditing. Calling
+    # authenticate_with_http_basic directly and handling the 401 ourselves
+    # gives an unambiguous boolean instead.
     def authenticate_commerce7!
-      authenticate_or_request_with_http_basic do |username, password|
-        expected_username = Rails.application.credentials.dig(:commerce7, :webhook_username)
-        expected_password = Rails.application.credentials.dig(:commerce7, :webhook_password)
+      return if authenticate_with_http_basic { |username, password| valid_commerce7_credentials?(username, password) }
 
-        expected_username.present? && expected_password.present? &&
-          ActiveSupport::SecurityUtils.secure_compare(username, expected_username) &&
-          ActiveSupport::SecurityUtils.secure_compare(password, expected_password)
-      end
+      AuditEvent.record!(
+        event_type: "commerce7_server_auth",
+        success: false,
+        commerce7_tenant_id: params[:tenantId],
+        origin_ip: request.remote_ip,
+        metadata: { path: request.path }
+      )
+      request_http_basic_authentication
+    end
+
+    def valid_commerce7_credentials?(username, password)
+      expected_username = Rails.application.credentials.dig(:commerce7, :webhook_username)
+      expected_password = Rails.application.credentials.dig(:commerce7, :webhook_password)
+
+      expected_username.present? && expected_password.present? &&
+        ActiveSupport::SecurityUtils.secure_compare(username, expected_username) &&
+        ActiveSupport::SecurityUtils.secure_compare(password, expected_password)
     end
   end
 end

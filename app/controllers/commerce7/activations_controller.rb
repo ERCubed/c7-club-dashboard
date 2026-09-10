@@ -13,6 +13,8 @@ module Commerce7
       # memberships — this one-time sync is what actually populates those.
       Commerce7::SyncJob.perform_later(tenant)
 
+      AuditEvent.record!(event_type: "tenant_activated", success: true, commerce7_tenant_id: tenant.commerce7_tenant_id, origin_ip: request.remote_ip)
+
       head :ok
     end
 

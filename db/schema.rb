@@ -10,9 +10,23 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_03_012921) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_10_025506) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "audit_events", force: :cascade do |t|
+    t.string "actor"
+    t.string "commerce7_tenant_id"
+    t.datetime "created_at", null: false
+    t.string "event_type", null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.string "origin_ip"
+    t.boolean "success", null: false
+    t.datetime "updated_at", null: false
+    t.index ["commerce7_tenant_id"], name: "index_audit_events_on_commerce7_tenant_id"
+    t.index ["created_at"], name: "index_audit_events_on_created_at"
+    t.index ["event_type"], name: "index_audit_events_on_event_type"
+  end
 
   create_table "club_members", force: :cascade do |t|
     t.string "club_tier"

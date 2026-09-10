@@ -25,12 +25,28 @@ module Commerce7
     def authenticate_staff!
       tenant_id = params.require(:tenantId)
       tenant = Tenant.active.find_by(commerce7_tenant_id: tenant_id)
-      return head :forbidden unless tenant
+      unless tenant
+        audit_auth!(success: false, tenant_id: tenant_id, reason: "unknown_or_deactivated_tenant")
+        return head :forbidden
+      end
 
       Current.staff_user = Commerce7::AccountClient.new.fetch_user(tenant_id: tenant_id, token: params.require(:account))
       Current.tenant = tenant
+      audit_auth!(success: true, tenant_id: tenant_id, actor: Current.staff_user["email"])
     rescue Commerce7::AccountClient::AuthenticationError
+      audit_auth!(success: false, tenant_id: tenant_id, reason: "invalid_staff_token")
       render "commerce7/extension/unauthorized", status: :unauthorized
+    end
+
+    def audit_auth!(success:, tenant_id:, actor: nil, reason: nil)
+      AuditEvent.record!(
+        event_type: "staff_extension_auth",
+        success: success,
+        actor: actor,
+        commerce7_tenant_id: tenant_id,
+        origin_ip: request.remote_ip,
+        metadata: reason ? { reason: reason } : {}
+      )
     end
   end
 end

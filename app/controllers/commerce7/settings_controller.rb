@@ -30,12 +30,14 @@ module Commerce7
       if invalid.any?
         @tier_colors = ClubMember.tier_colors(@tiers).merge(submitted)
         @error = "Enter a valid hex color (e.g. #ff0000) for: #{invalid.keys.join(', ')}."
+        audit_settings_update!(success: false, metadata: { invalid: invalid.keys })
         render :show, status: :unprocessable_entity
         return
       end
 
       cleared, set = submitted.partition { |_tier, hex| hex.blank? }.map(&:to_h)
       Current.tenant.update!(tier_color_overrides: Current.tenant.tier_color_overrides.merge(set).except(*cleared.keys))
+      audit_settings_update!(success: true, metadata: { set: set.keys, cleared: cleared.keys })
 
       redirect_to commerce7_settings_path(tenantId: params[:tenantId], account: params[:account], saved: true)
     end
@@ -44,6 +46,17 @@ module Commerce7
 
     def current_tiers
       ClubMember.tier_breakdown.keys.compact_blank.sort
+    end
+
+    def audit_settings_update!(success:, metadata:)
+      AuditEvent.record!(
+        event_type: "tier_colors_updated",
+        success: success,
+        actor: Current.staff_user["email"],
+        commerce7_tenant_id: Current.tenant.commerce7_tenant_id,
+        origin_ip: request.remote_ip,
+        metadata: metadata
+      )
     end
   end
 end

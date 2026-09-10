@@ -24,6 +24,7 @@ RSpec.describe Commerce7::ExtensionController, type: :controller do
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to eq("tenant=winery-1 staff=Jason")
+    expect(AuditEvent.last).to have_attributes(event_type: "staff_extension_auth", success: true, actor: "jason@example.com", commerce7_tenant_id: "winery-1")
   end
 
   it "drops the default X-Frame-Options so Commerce7 can embed the page" do
@@ -39,6 +40,7 @@ RSpec.describe Commerce7::ExtensionController, type: :controller do
     get :index, params: { tenantId: "unknown-winery", account: "jwt-token" }
 
     expect(response).to have_http_status(:forbidden)
+    expect(AuditEvent.last).to have_attributes(event_type: "staff_extension_auth", success: false, commerce7_tenant_id: "unknown-winery")
   end
 
   it "returns 403 when the tenant is deactivated" do
@@ -56,6 +58,7 @@ RSpec.describe Commerce7::ExtensionController, type: :controller do
     get :index, params: { tenantId: "winery-1", account: "bad-token" }
 
     expect(response).to have_http_status(:unauthorized)
+    expect(AuditEvent.last).to have_attributes(event_type: "staff_extension_auth", success: false, commerce7_tenant_id: "winery-1")
   end
 
   it "returns 400 when tenantId is missing" do
