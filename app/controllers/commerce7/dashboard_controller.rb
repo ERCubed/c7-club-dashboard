@@ -3,6 +3,8 @@ module Commerce7
   # already synced into ClubMember/OrderSummary — this controller never calls
   # Commerce7's API itself.
   class DashboardController < ExtensionController
+    layout "commerce7_extension"
+
     def show
       @at_risk_months = at_risk_months
       @tier_breakdown = ClubMember.tier_breakdown

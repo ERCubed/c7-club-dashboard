@@ -9,6 +9,8 @@ module Commerce7
   # view to resolve the order's customerId before reading the locally
   # synced ClubMember/OrderSummary data.
   class OrderDetailCardController < ExtensionController
+    layout "commerce7_extension"
+
     def show
       order_id = params[:orderId]
       @member = order_id.present? ? find_member(order_id) : nil

@@ -1,4 +1,6 @@
 class Tenant < ApplicationRecord
+  include Commerce7::TenantConcern
+
   # Per Commerce7's activation docs, this jsonb blob carries the installing
   # staff member's first name, last name, and email — PII, encrypted at
   # rest even though it's write-once and never queried by value.
@@ -7,39 +9,7 @@ class Tenant < ApplicationRecord
   has_many :club_members, dependent: :destroy
   has_many :order_summaries, dependent: :destroy
 
-  validates :commerce7_tenant_id, presence: true, uniqueness: true
   validate :tier_color_overrides_are_valid_hex
-
-  # Commerce7's app security policy requires customer data deleted within 30
-  # days of app termination — see Commerce7::PurgeDeactivatedTenantsJob,
-  # which hard-deletes (Tenant, and via dependent: :destroy, its
-  # ClubMember/OrderSummary rows) any tenant still deactivated after this
-  # window. Kept short of 30 days deliberately: a tenant reactivated via
-  # Tenant.activate! before this elapses keeps all its synced data.
-  DATA_RETENTION_DAYS = 30
-
-  scope :active, -> { where(deactivated_at: nil) }
-  scope :pending_deletion, -> { where.not(deactivated_at: nil).where(deactivated_at: ..DATA_RETENTION_DAYS.days.ago) }
-
-  # Handles both first install and a reinstall of a previously deactivated
-  # tenant (find_or_initialize_by, not create!) — activation always clears
-  # deactivated_at, matching Commerce7 sending an activation POST either way.
-  def self.activate!(commerce7_tenant_id:, payload:)
-    tenant = find_or_initialize_by(commerce7_tenant_id: commerce7_tenant_id)
-    tenant.update!(activated_at: Time.current, deactivated_at: nil, raw_activation_payload: payload)
-    tenant
-  end
-
-  def active?
-    deactivated_at.nil?
-  end
-
-  # Soft-deactivates, never deletes — an uninstall may be followed by a
-  # reinstall (see .activate!), and synced ClubMember/OrderSummary data
-  # shouldn't vanish just because the app was temporarily removed.
-  def deactivate!
-    update!(deactivated_at: Time.current)
-  end
 
   private
 

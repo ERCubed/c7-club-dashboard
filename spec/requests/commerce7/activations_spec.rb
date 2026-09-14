@@ -1,5 +1,9 @@
 require "rails_helper"
 
+# Commerce7::ActivationsController itself (auth, tenant create/reactivate
+# mechanics, audit) is gem-owned and tested there (see commerce7-rails).
+# This covers what's actually this app's code: the on_activate hook
+# registered in config/initializers/commerce7.rb.
 RSpec.describe "Commerce7 activations", type: :request do
   let!(:username) { Rails.application.credentials.dig(:commerce7, :webhook_username) }
   let!(:password) { Rails.application.credentials.dig(:commerce7, :webhook_password) }
@@ -14,11 +18,7 @@ RSpec.describe "Commerce7 activations", type: :request do
 
     tenant = Tenant.find_by(commerce7_tenant_id: "winery-1")
     expect(tenant).to be_present
-    expect(tenant.activated_at).to be_present
-    expect(tenant.deactivated_at).to be_nil
-    expect(tenant.raw_activation_payload["tenantId"]).to eq("winery-1")
     expect(tenant.raw_activation_payload["email"]).to eq("jane@example.com")
-    expect(AuditEvent.last).to have_attributes(event_type: "tenant_activated", success: true, commerce7_tenant_id: "winery-1")
   end
 
   it "enqueues a backfill sync scoped to the newly activated tenant" do
@@ -27,71 +27,14 @@ RSpec.describe "Commerce7 activations", type: :request do
     }.to have_enqueued_job(Commerce7::SyncJob).with { |tenant| expect(tenant.commerce7_tenant_id).to eq("winery-1") }
   end
 
-  it "reactivates an existing tenant and clears deactivated_at" do
+  it "reactivates an existing tenant, still scoped through the same on_activate hook" do
     tenant = Tenant.create!(commerce7_tenant_id: "winery-1", deactivated_at: 1.day.ago)
 
-    post commerce7_activate_path, params: { tenantId: "winery-1" }, headers: auth_headers
+    expect {
+      post commerce7_activate_path, params: { tenantId: "winery-1" }, headers: auth_headers
+    }.to have_enqueued_job(Commerce7::SyncJob).with(tenant)
 
-    expect(response).to have_http_status(:ok)
     expect(Tenant.count).to eq(1)
     expect(tenant.reload.deactivated_at).to be_nil
-  end
-
-  it "returns 400 when tenantId is missing" do
-    post commerce7_activate_path, params: {}, headers: auth_headers
-
-    expect(response).to have_http_status(:bad_request)
-  end
-
-  it "returns 401 when the credentials are wrong" do
-    bad_headers = { "HTTP_AUTHORIZATION" => ActionController::HttpAuthentication::Basic.encode_credentials("wrong", "wrong") }
-
-    post commerce7_activate_path, params: { tenantId: "winery-1" }, headers: bad_headers
-
-    expect(response).to have_http_status(:unauthorized)
-    expect(Tenant.find_by(commerce7_tenant_id: "winery-1")).to be_nil
-  end
-
-  it "records an AuditEvent for a failed authentication attempt" do
-    bad_headers = { "HTTP_AUTHORIZATION" => ActionController::HttpAuthentication::Basic.encode_credentials("wrong", "wrong") }
-
-    post commerce7_activate_path, params: { tenantId: "winery-1" }, headers: bad_headers
-
-    event = AuditEvent.last
-    expect(event.event_type).to eq("commerce7_server_auth")
-    expect(event.success).to be false
-    expect(event.commerce7_tenant_id).to eq("winery-1")
-  end
-
-  it "returns 401 when the password is wrong but the username is right" do
-    bad_headers = { "HTTP_AUTHORIZATION" => ActionController::HttpAuthentication::Basic.encode_credentials(username, "wrong") }
-
-    post commerce7_activate_path, params: { tenantId: "winery-1" }, headers: bad_headers
-
-    expect(response).to have_http_status(:unauthorized)
-  end
-
-  it "returns 401 when no webhook username is configured" do
-    allow(Rails.application.credentials).to receive(:dig).with(:commerce7, :webhook_username).and_return(nil)
-    allow(Rails.application.credentials).to receive(:dig).with(:commerce7, :webhook_password).and_return(password)
-
-    post commerce7_activate_path, params: { tenantId: "winery-1" }, headers: auth_headers
-
-    expect(response).to have_http_status(:unauthorized)
-  end
-
-  it "returns 401 when no webhook password is configured" do
-    allow(Rails.application.credentials).to receive(:dig).with(:commerce7, :webhook_username).and_return(username)
-    allow(Rails.application.credentials).to receive(:dig).with(:commerce7, :webhook_password).and_return(nil)
-
-    post commerce7_activate_path, params: { tenantId: "winery-1" }, headers: auth_headers
-
-    expect(response).to have_http_status(:unauthorized)
-  end
-
-  it "returns 401 when no Authorization header is sent at all" do
-    post commerce7_activate_path, params: { tenantId: "winery-1" }
-
-    expect(response).to have_http_status(:unauthorized)
   end
 end

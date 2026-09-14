@@ -37,8 +37,10 @@ gem "kamal", require: false
 # Add HTTP asset caching/compression and X-Sendfile acceleration to Puma [https://github.com/basecamp/thruster/]
 gem "thruster", require: false
 
-# HTTP client for the Commerce7 API [https://github.com/lostisland/faraday]
-gem "faraday"
+# Commerce7 App Store integration plumbing: activation/deactivation, staff
+# App Extension auth, webhook dispatch, the REST client, and the 30-day
+# post-uninstall purge [https://github.com/ERCubed/commerce7-rails]
+gem "commerce7-rails", github: "ERCubed/commerce7-rails", tag: "v0.1.1"
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
