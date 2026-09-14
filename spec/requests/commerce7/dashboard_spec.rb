@@ -11,12 +11,19 @@ RSpec.describe "Commerce7 dashboard", type: :request do
       .to_return(status: 200, body: user_payload.to_json, headers: json_headers)
   end
 
-  def create_member(customer_id:, name:, club_tier:, status: "Active", lifetime_value_cents: 0, order_count: 0, last_order_at: nil)
+  def create_member(customer_id:, name:, club_tier:, status: "Active", lifetime_value_cents: 0, order_count: 0, last_order_at: nil, joined_at: 1.year.ago)
     Current.tenant = tenant
-    member = ClubMember.create!(tenant: tenant, commerce7_customer_id: customer_id, name: name, email: "#{customer_id}@example.com", club_tier: club_tier, status: status, joined_at: 1.year.ago)
+    member = ClubMember.create!(tenant: tenant, commerce7_customer_id: customer_id, name: name, email: "#{customer_id}@example.com", club_tier: club_tier, status: status, joined_at: joined_at)
     OrderSummary.create!(tenant: tenant, commerce7_customer_id: customer_id, lifetime_value_cents: lifetime_value_cents, order_count: order_count, last_order_at: last_order_at)
     Current.tenant = nil
     member
+  end
+
+  # Reads a stat tile's value by its label, e.g. stat_tile("New this month") => "1" —
+  # more precise than a loose substring match, since a bare number or "$100.00"
+  # is otherwise too generic to assert on reliably.
+  def stat_tile(label)
+    response.body[/#{Regexp.escape(label)}<\/p>\s*<p[^>]*>\s*([^<]+?)\s*<\/p>/m, 1]
   end
 
   it "renders membership counts, top spenders, and at-risk members" do
@@ -70,6 +77,45 @@ RSpec.describe "Commerce7 dashboard", type: :request do
     expect(response.body).to include("75.0%")
     expect(response.body).to include("White Club")
     expect(response.body).to include("25.0%")
+  end
+
+  it "shows revenue by tier, weighted by lifetime value rather than headcount" do
+    create_member(customer_id: "cust-1", name: "Red Spender", club_tier: "Red Club", lifetime_value_cents: 30_000, order_count: 3)
+    create_member(customer_id: "cust-2", name: "White Spender", club_tier: "White Club", lifetime_value_cents: 10_000, order_count: 1)
+
+    get commerce7_dashboard_path, params: auth_params
+
+    expect(response.body).to include("Revenue by tier")
+    expect(response.body).to include("$300.00")
+    expect(response.body).to include("75.0%")
+    expect(response.body).to include("$100.00")
+    expect(response.body).to include("25.0%")
+  end
+
+  it "shows the average order value across active members with orders, weighted by order count" do
+    create_member(customer_id: "cust-1", name: "A", club_tier: "Red Club", lifetime_value_cents: 30_000, order_count: 3)
+    create_member(customer_id: "cust-2", name: "B", club_tier: "Red Club", lifetime_value_cents: 10_000, order_count: 1)
+    create_member(customer_id: "cust-3", name: "No Orders Yet", club_tier: "Red Club")
+
+    get commerce7_dashboard_path, params: auth_params
+
+    expect(stat_tile("Average order value")).to eq("$100.00")
+  end
+
+  it "shows 0 average order value when no active member has an order yet" do
+    get commerce7_dashboard_path, params: auth_params
+
+    expect(stat_tile("Average order value")).to eq("$0.00")
+  end
+
+  it "counts new members who joined this calendar month" do
+    create_member(customer_id: "cust-1", name: "New Member", club_tier: "Red Club", joined_at: Time.current.beginning_of_month)
+    create_member(customer_id: "cust-2", name: "Old Member", club_tier: "Red Club", joined_at: 6.months.ago)
+    create_member(customer_id: "cust-3", name: "Cancelled This Month", club_tier: "Red Club", status: "Cancelled", joined_at: Time.current.beginning_of_month)
+
+    get commerce7_dashboard_path, params: auth_params
+
+    expect(stat_tile("New this month")).to eq("1")
   end
 
   it "assigns tier colors by name so they stay stable as relative size shifts" do

@@ -25,6 +25,8 @@ class ClubMember < ApplicationRecord
 
   scope :active, -> { where(status: "Active") }
 
+  scope :new_this_month, -> { active.where(joined_at: Time.current.beginning_of_month..) }
+
   scope :top_spenders, ->(limit = 10) {
     active.joins(:order_summary).includes(:order_summary)
       .order(order_summaries: { lifetime_value_cents: :desc })
@@ -40,6 +42,26 @@ class ClubMember < ApplicationRecord
 
   def self.tier_breakdown
     active.group(:club_tier).count
+  end
+
+  # Lifetime value in cents, grouped the same way as .tier_breakdown (same
+  # nil-tier grouping, same active-only scope) so the two stay comparable —
+  # a tier with a small member count but outsized revenue share should be
+  # visible next to its headcount share, not just implied by it.
+  def self.revenue_by_tier
+    active.joins(:order_summary).group(:club_tier).sum(:"order_summaries.lifetime_value_cents")
+  end
+
+  # Overall average order value in cents, across active members with at
+  # least one order — not per-member-then-averaged, but total revenue over
+  # total orders, so a member with many small orders doesn't skew this the
+  # same as one with a single large order.
+  def self.average_order_value_cents
+    with_orders = active.joins(:order_summary).where("order_summaries.order_count > 0")
+    total_orders = with_orders.sum(:"order_summaries.order_count")
+    return 0 if total_orders.zero?
+
+    (with_orders.sum(:"order_summaries.lifetime_value_cents").to_f / total_orders).round
   end
 
   # Assigns colors by tier name, not by current size — a filter or a

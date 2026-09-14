@@ -10,6 +10,9 @@ module Commerce7
       @tier_breakdown = ClubMember.tier_breakdown
       @tier_colors = ClubMember.tier_colors(@tier_breakdown.keys)
       @top_spenders = ClubMember.top_spenders
+      @revenue_by_tier = ClubMember.revenue_by_tier
+      @new_members_this_month = ClubMember.new_this_month.count
+      @average_order_value_cents = ClubMember.average_order_value_cents
 
       at_risk_scope = ClubMember.at_risk(@at_risk_months)
       @at_risk_count = at_risk_scope.count
