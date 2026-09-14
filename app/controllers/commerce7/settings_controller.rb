@@ -6,6 +6,8 @@ module Commerce7
   # Tenant#tier_color_overrides. This is the app's first mutating,
   # browser-submitted form.
   class SettingsController < ExtensionController
+    layout "commerce7_extension"
+
     # Commerce7 iframes this page cross-site inside its admin panel; the
     # session cookie Rails' default CSRF token relies on may not persist in
     # that context (SameSite=Lax cookies aren't sent on cross-site non-GET

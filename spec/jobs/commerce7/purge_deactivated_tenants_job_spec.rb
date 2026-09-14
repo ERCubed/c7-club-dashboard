@@ -1,5 +1,12 @@
 require "rails_helper"
 
+# Commerce7::PurgeDeactivatedTenantsJob itself is gem-owned (see
+# commerce7-rails); this exercises it against this app's real ClubMember/
+# OrderSummary associations, since those are the actual FK/tenant-scoping
+# risk — dependent: :destroy relies on Current.tenant being set for
+# TenantScoped's default_scope to find what to cascade, and club_members/
+# order_summaries have a real FK constraint back to tenants with no ON
+# DELETE CASCADE.
 RSpec.describe Commerce7::PurgeDeactivatedTenantsJob do
   after { Current.tenant = nil }
 

@@ -1,5 +1,9 @@
 require "rails_helper"
 
+# Commerce7::WebhooksController itself (auth, JSON parsing, tenant lookup,
+# dispatch, audit) is gem-owned and tested there (see commerce7-rails).
+# This covers what's actually this app's code: the handlers registered
+# against Commerce7::Webhooks in config/initializers/commerce7.rb.
 RSpec.describe "Commerce7 webhooks", type: :request do
   include ActiveJob::TestHelper
 
@@ -8,9 +12,9 @@ RSpec.describe "Commerce7 webhooks", type: :request do
   let!(:password) { Rails.application.credentials.dig(:commerce7, :webhook_password) }
   let(:auth_headers) { { "HTTP_AUTHORIZATION" => ActionController::HttpAuthentication::Basic.encode_credentials(username, password) } }
 
-  def post_webhook(object:, action:, payload: {}, tenant_id: "winery-1", user: "staff@example.com")
+  def post_webhook(object:, action:, payload: {}, user: "staff@example.com")
     post commerce7_webhooks_path,
-      params: { tenantId: tenant_id, object: object, action: action, payload: payload, user: user },
+      params: { tenantId: "winery-1", object: object, action: action, payload: payload, user: user },
       headers: auth_headers,
       as: :json
   end
@@ -20,48 +24,6 @@ RSpec.describe "Commerce7 webhooks", type: :request do
     ClubMember.create!(tenant: tenant, commerce7_customer_id: customer_id, name: "Test Member")
     OrderSummary.create!(tenant: tenant, commerce7_customer_id: customer_id)
     Current.tenant = nil
-  end
-
-  it "returns 401 when the credentials are wrong" do
-    post commerce7_webhooks_path,
-      params: { tenantId: "winery-1", object: "Customer", action: "Delete", payload: { customerId: "cust-1" } },
-      headers: { "HTTP_AUTHORIZATION" => ActionController::HttpAuthentication::Basic.encode_credentials("wrong", "wrong") },
-      as: :json
-
-    expect(response).to have_http_status(:unauthorized)
-    expect(AuditEvent.last).to have_attributes(event_type: "commerce7_server_auth", success: false, commerce7_tenant_id: "winery-1")
-  end
-
-  it "returns 400 when a required top-level field is missing" do
-    post commerce7_webhooks_path, params: { tenantId: "winery-1", object: "Customer" }, headers: auth_headers, as: :json
-
-    expect(response).to have_http_status(:bad_request)
-  end
-
-  it "acks and no-ops for an unknown tenant, rather than erroring" do
-    expect {
-      post_webhook(object: "Customer", action: "Delete", payload: { customerId: "cust-1" }, tenant_id: "unknown-winery")
-    }.not_to have_enqueued_job(Commerce7::SyncJob)
-
-    expect(response).to have_http_status(:ok)
-  end
-
-  it "acks and no-ops for an object/action combo it doesn't recognize" do
-    post_webhook(object: "Order", action: "Create", payload: { id: "order-1" })
-
-    expect(response).to have_http_status(:ok)
-  end
-
-  it "acks and no-ops for a Club Membership action it doesn't recognize" do
-    post_webhook(object: "Club Membership", action: "Bulk Update", payload: {})
-
-    expect(response).to have_http_status(:ok)
-  end
-
-  it "returns 400 for a malformed JSON body" do
-    post commerce7_webhooks_path, params: "not json", headers: auth_headers.merge("CONTENT_TYPE" => "application/json")
-
-    expect(response).to have_http_status(:bad_request)
   end
 
   describe "Club Membership Create/Update" do
@@ -75,8 +37,7 @@ RSpec.describe "Commerce7 webhooks", type: :request do
         event_type: "webhook_club_membership_create",
         success: true,
         actor: "jason@example.com",
-        commerce7_tenant_id: "winery-1",
-        metadata: { "customer_id" => "cust-1" }
+        commerce7_tenant_id: "winery-1"
       )
     end
 
