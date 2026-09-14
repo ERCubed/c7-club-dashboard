@@ -110,6 +110,74 @@ RSpec.describe ClubMember, type: :model do
     end
   end
 
+  describe ".revenue_by_tier" do
+    it "sums lifetime value by tier, excluding cancelled members" do
+      tenant = Tenant.create!(commerce7_tenant_id: "abc123")
+      Current.tenant = tenant
+      ClubMember.create!(tenant: tenant, commerce7_customer_id: "cust-1", status: "Active", club_tier: "Red Club")
+      OrderSummary.create!(tenant: tenant, commerce7_customer_id: "cust-1", lifetime_value_cents: 10_000)
+      ClubMember.create!(tenant: tenant, commerce7_customer_id: "cust-2", status: "Active", club_tier: "Red Club")
+      OrderSummary.create!(tenant: tenant, commerce7_customer_id: "cust-2", lifetime_value_cents: 5_000)
+      ClubMember.create!(tenant: tenant, commerce7_customer_id: "cust-3", status: "Cancelled", club_tier: "Red Club")
+      OrderSummary.create!(tenant: tenant, commerce7_customer_id: "cust-3", lifetime_value_cents: 99_999)
+
+      expect(ClubMember.revenue_by_tier).to eq({ "Red Club" => 15_000 })
+    end
+
+    it "excludes members without an order_summary row" do
+      tenant = Tenant.create!(commerce7_tenant_id: "abc123")
+      Current.tenant = tenant
+      ClubMember.create!(tenant: tenant, commerce7_customer_id: "cust-1", status: "Active", club_tier: "Red Club")
+
+      expect(ClubMember.revenue_by_tier).to eq({})
+    end
+  end
+
+  describe ".average_order_value_cents" do
+    it "divides total lifetime value by total order count across active members" do
+      tenant = Tenant.create!(commerce7_tenant_id: "abc123")
+      Current.tenant = tenant
+      ClubMember.create!(tenant: tenant, commerce7_customer_id: "cust-1", status: "Active")
+      OrderSummary.create!(tenant: tenant, commerce7_customer_id: "cust-1", lifetime_value_cents: 30_000, order_count: 3)
+      ClubMember.create!(tenant: tenant, commerce7_customer_id: "cust-2", status: "Active")
+      OrderSummary.create!(tenant: tenant, commerce7_customer_id: "cust-2", lifetime_value_cents: 10_000, order_count: 1)
+
+      expect(ClubMember.average_order_value_cents).to eq(10_000)
+    end
+
+    it "excludes cancelled members and members with no orders yet" do
+      tenant = Tenant.create!(commerce7_tenant_id: "abc123")
+      Current.tenant = tenant
+      ClubMember.create!(tenant: tenant, commerce7_customer_id: "cust-1", status: "Active")
+      OrderSummary.create!(tenant: tenant, commerce7_customer_id: "cust-1", lifetime_value_cents: 10_000, order_count: 1)
+      ClubMember.create!(tenant: tenant, commerce7_customer_id: "cust-2", status: "Cancelled")
+      OrderSummary.create!(tenant: tenant, commerce7_customer_id: "cust-2", lifetime_value_cents: 99_999, order_count: 99)
+      ClubMember.create!(tenant: tenant, commerce7_customer_id: "cust-3", status: "Active")
+      OrderSummary.create!(tenant: tenant, commerce7_customer_id: "cust-3", lifetime_value_cents: 0, order_count: 0)
+
+      expect(ClubMember.average_order_value_cents).to eq(10_000)
+    end
+
+    it "is 0 when no active member has an order yet" do
+      tenant = Tenant.create!(commerce7_tenant_id: "abc123")
+      Current.tenant = tenant
+
+      expect(ClubMember.average_order_value_cents).to eq(0)
+    end
+  end
+
+  describe ".new_this_month" do
+    it "includes active members who joined this calendar month, excluding earlier joins and cancelled members" do
+      tenant = Tenant.create!(commerce7_tenant_id: "abc123")
+      Current.tenant = tenant
+      this_month = ClubMember.create!(tenant: tenant, commerce7_customer_id: "cust-1", status: "Active", joined_at: Time.current.beginning_of_month)
+      ClubMember.create!(tenant: tenant, commerce7_customer_id: "cust-2", status: "Active", joined_at: 1.month.ago.beginning_of_month)
+      ClubMember.create!(tenant: tenant, commerce7_customer_id: "cust-3", status: "Cancelled", joined_at: Time.current.beginning_of_month)
+
+      expect(ClubMember.new_this_month).to contain_exactly(this_month)
+    end
+  end
+
   describe ".tier_colors" do
     it "assigns colors by tier name in a fixed, alphabetical order" do
       colors = ClubMember.tier_colors([ "White Club", "Apple Club" ])

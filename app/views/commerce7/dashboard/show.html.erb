@@ -13,11 +13,25 @@
 
   <section aria-labelledby="membership-heading">
     <h2 id="membership-heading" class="text-sm font-medium text-stone-500 mb-3">Membership Overview</h2>
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
       <div class="rounded-lg border border-stone-200 p-4">
         <p class="text-sm text-stone-500">Active members</p>
         <p class="mt-1 text-2xl font-semibold text-stone-900" style="font-variant-numeric: tabular-nums;">
           <%= number_with_delimiter(@tier_breakdown.values.sum) %>
+        </p>
+      </div>
+
+      <div class="rounded-lg border border-stone-200 p-4">
+        <p class="text-sm text-stone-500">New this month</p>
+        <p class="mt-1 text-2xl font-semibold text-stone-900" style="font-variant-numeric: tabular-nums;">
+          <%= number_with_delimiter(@new_members_this_month) %>
+        </p>
+      </div>
+
+      <div class="rounded-lg border border-stone-200 p-4">
+        <p class="text-sm text-stone-500">Average order value</p>
+        <p class="mt-1 text-2xl font-semibold text-stone-900" style="font-variant-numeric: tabular-nums;">
+          <%= number_to_currency(@average_order_value_cents / 100.0) %>
         </p>
       </div>
 
@@ -49,6 +63,33 @@
               <span class="text-stone-700 truncate"><%= label %></span>
               <span class="shrink-0 text-stone-500" style="font-variant-numeric: tabular-nums;">
                 <%= number_with_delimiter(count) %> · <%= percentage_text %>
+              </span>
+            </div>
+            <div class="h-3 rounded-full bg-stone-100" role="img" aria-label="<%= "#{label}: #{percentage_text}" %>">
+              <div class="h-3 rounded-r-full" style="width: <%= percentage %>%; background-color: <%= @tier_colors[tier] %>"></div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </section>
+
+  <section aria-labelledby="revenue-by-tier-heading">
+    <h2 id="revenue-by-tier-heading" class="text-sm font-medium text-stone-500 mb-3">Revenue by tier</h2>
+    <% total_revenue_cents = @revenue_by_tier.values.sum %>
+    <% if total_revenue_cents.zero? %>
+      <p class="text-sm text-stone-500">No order data yet.</p>
+    <% else %>
+      <div class="rounded-lg border border-stone-200 p-4 space-y-3">
+        <% @revenue_by_tier.sort_by { |_tier, cents| -cents }.each do |tier, cents| %>
+          <% label = tier.presence || "No tier" %>
+          <% percentage = cents * 100.0 / total_revenue_cents %>
+          <% percentage_text = number_to_percentage(percentage, precision: 1) %>
+          <div>
+            <div class="flex items-baseline justify-between gap-3 text-sm mb-1">
+              <span class="text-stone-700 truncate"><%= label %></span>
+              <span class="shrink-0 text-stone-500" style="font-variant-numeric: tabular-nums;">
+                <%= number_to_currency(cents / 100.0) %> · <%= percentage_text %>
               </span>
             </div>
             <div class="h-3 rounded-full bg-stone-100" role="img" aria-label="<%= "#{label}: #{percentage_text}" %>">
