@@ -27,15 +27,16 @@
         fill="none" stroke="<%= color %>" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
       />
 
-      <% points.each do |p| %>
-        <circle cx="<%= p[:x] %>" cy="<%= p[:y] %>" r="3" fill="<%= color %>" stroke="white" stroke-width="1.5" />
-      <% end %>
+      <%# A visible marker only at the end, per spec (r >= 4) — at daily
+          density a dot on every point buries the line under its own
+          markers and reads as a dotted string rather than a trend. %>
+      <circle cx="<%= last_point[:x] %>" cy="<%= last_point[:y] %>" r="4" fill="<%= color %>" stroke="white" stroke-width="1.5" />
 
-      <%# Larger invisible hit target per point, carrying the tooltip — native
-          <title>, so every value is reachable on hover or keyboard focus with
-          no custom JS. %>
+      <%# Invisible larger hit target per point, carrying the tooltip —
+          native <title>, so every value is reachable on hover or keyboard
+          focus with no custom JS. %>
       <% points.each do |p| %>
-        <circle cx="<%= p[:x] %>" cy="<%= p[:y] %>" r="12" fill="transparent" tabindex="0"><title><%= "#{p[:snapshot].snapshot_date.to_fs(:long)}: #{format_value.call(p[:value])}" %></title></circle>
+        <circle cx="<%= p[:x] %>" cy="<%= p[:y] %>" r="10" fill="transparent" tabindex="0"><title><%= "#{p[:snapshot].snapshot_date.to_fs(:long)}: #{format_value.call(p[:value])}" %></title></circle>
       <% end %>
 
       <text
