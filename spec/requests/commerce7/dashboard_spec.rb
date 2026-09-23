@@ -142,6 +142,58 @@ RSpec.describe "Commerce7 dashboard", type: :request do
     expect(response).to have_http_status(:forbidden)
   end
 
+  describe "Trends" do
+    def create_snapshot(days_ago:, active_members_count: 0, revenue_cents: 0, at_risk_count: 0)
+      Current.tenant = tenant
+      TenantMetricSnapshot.create!(
+        tenant: tenant, snapshot_date: days_ago.days.ago.to_date,
+        active_members_count: active_members_count, revenue_cents: revenue_cents, at_risk_count: at_risk_count
+      )
+      Current.tenant = nil
+    end
+
+    it "shows a not-enough-data message when fewer than two snapshots exist" do
+      create_snapshot(days_ago: 0, active_members_count: 5)
+
+      get commerce7_dashboard_path, params: auth_params
+
+      expect(response.body).to include("Trend data will appear here after a few days of snapshots.")
+    end
+
+    it "charts active members, revenue, and at-risk counts across snapshots within the window" do
+      create_snapshot(days_ago: 10, active_members_count: 5, revenue_cents: 10_000, at_risk_count: 1)
+      create_snapshot(days_ago: 0, active_members_count: 8, revenue_cents: 25_000, at_risk_count: 2)
+
+      get commerce7_dashboard_path, params: auth_params
+
+      expect(response.body).to include("Active members")
+      expect(response.body).to include("Revenue")
+      expect(response.body).to include("At risk")
+      # Direct end-label on each chart shows the latest snapshot's value.
+      expect(response.body).to include("$250.00")
+    end
+
+    it "excludes snapshots outside the requested trend_days window" do
+      create_snapshot(days_ago: 100, active_members_count: 1)
+      create_snapshot(days_ago: 50, active_members_count: 2)
+      create_snapshot(days_ago: 0, active_members_count: 3)
+
+      get commerce7_dashboard_path, params: auth_params.merge(trend_days: 90)
+
+      expect(response.body).not_to include("Trend data will appear here")
+    end
+
+    it "treats a non-positive trend_days as the default" do
+      create_snapshot(days_ago: 10, active_members_count: 5)
+      create_snapshot(days_ago: 0, active_members_count: 8)
+
+      get commerce7_dashboard_path, params: auth_params.merge(trend_days: 0)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("Trend data will appear here")
+    end
+  end
+
   it "shows a friendly message when Commerce7 rejects the staff token" do
     stub_request(:get, "https://api.commerce7.com/v1/account/user")
       .to_return(status: 401, body: { "statusCode" => 401, "type" => "unauthorized" }.to_json, headers: json_headers)

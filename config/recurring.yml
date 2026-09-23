@@ -23,6 +23,12 @@ production:
     class: Commerce7::SyncJob
     queue: default
     schedule: every day at 4am
+  # Runs after commerce7_sync so today's snapshot reflects today's synced
+  # data — see Commerce7::SnapshotMetricsJob.
+  commerce7_snapshot_metrics:
+    class: Commerce7::SnapshotMetricsJob
+    queue: default
+    schedule: every day at 4:30am
   commerce7_purge_deactivated_tenants:
     class: Commerce7::PurgeDeactivatedTenantsJob
     queue: default
