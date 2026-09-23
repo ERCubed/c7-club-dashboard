@@ -1,0 +1,74 @@
+<%
+  points = trend_chart_points(snapshots, value_method)
+  format_value = ->(value) { format == :currency ? number_to_currency(value / 100.0) : number_with_delimiter(value) }
+%>
+<div class="rounded-lg border border-stone-200 p-4">
+  <p class="text-sm text-stone-500 mb-2"><%= title %></p>
+
+  <% if points.size < 2 %>
+    <p class="text-sm text-stone-500">Trend data will appear here after a few days of snapshots.</p>
+  <% else %>
+    <% last_point = points.last %>
+    <svg
+      viewBox="0 0 <%= Commerce7::DashboardHelper::TREND_CHART_WIDTH %> <%= Commerce7::DashboardHelper::TREND_CHART_HEIGHT %>"
+      class="w-full h-28"
+      role="img"
+      aria-label="<%= title %> over the last <%= snapshots.size %> days, from #{format_value.call(points.first[:value])} to #{format_value.call(last_point[:value])}"
+    >
+      <line
+        x1="0" x2="<%= Commerce7::DashboardHelper::TREND_CHART_WIDTH %>"
+        y1="<%= Commerce7::DashboardHelper::TREND_CHART_HEIGHT - Commerce7::DashboardHelper::TREND_CHART_PADDING %>"
+        y2="<%= Commerce7::DashboardHelper::TREND_CHART_HEIGHT - Commerce7::DashboardHelper::TREND_CHART_PADDING %>"
+        stroke="#e7e5e4" stroke-width="1"
+      />
+
+      <polyline
+        points="<%= points.map { |p| "#{p[:x]},#{p[:y]}" }.join(' ') %>"
+        fill="none" stroke="<%= color %>" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+      />
+
+      <%# A visible marker only at the end, per spec (r >= 4) — at daily
+          density a dot on every point buries the line under its own
+          markers and reads as a dotted string rather than a trend. %>
+      <circle cx="<%= last_point[:x] %>" cy="<%= last_point[:y] %>" r="4" fill="<%= color %>" stroke="white" stroke-width="1.5" />
+
+      <%# Invisible larger hit target per point, carrying the tooltip —
+          native <title>, so every value is reachable on hover or keyboard
+          focus with no custom JS. %>
+      <% points.each do |p| %>
+        <circle cx="<%= p[:x] %>" cy="<%= p[:y] %>" r="10" fill="transparent" tabindex="0"><title><%= "#{p[:snapshot].snapshot_date.to_fs(:long)}: #{format_value.call(p[:value])}" %></title></circle>
+      <% end %>
+
+      <text
+        x="<%= last_point[:x] %>" y="<%= [ last_point[:y] - 8, 10 ].max %>"
+        text-anchor="end" class="fill-stone-700" style="font-size: 11px; font-weight: 600;"
+      ><%= format_value.call(last_point[:value]) %></text>
+    </svg>
+  <% end %>
+
+  <% if snapshots.any? %>
+    <details class="mt-2">
+      <summary class="text-xs text-stone-500 cursor-pointer select-none">Show data table</summary>
+      <div class="mt-2 overflow-x-auto">
+        <table class="min-w-full text-xs">
+          <thead>
+            <tr class="border-b border-stone-200 text-left text-stone-500">
+              <th class="px-2 py-1 font-medium">Date</th>
+              <th class="px-2 py-1 font-medium text-right"><%= title %></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% snapshots.reverse_each do |snapshot| %>
+              <tr class="border-b border-stone-100 last:border-0">
+                <td class="px-2 py-1 text-stone-700"><%= snapshot.snapshot_date.to_fs(:long) %></td>
+                <td class="px-2 py-1 text-right text-stone-900" style="font-variant-numeric: tabular-nums;">
+                  <%= format_value.call(snapshot.public_send(value_method)) %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </details>
+  <% end %>
+</div>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_10_025506) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_23_153602) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -57,6 +57,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_10_025506) do
     t.index ["tenant_id"], name: "index_order_summaries_on_tenant_id"
   end
 
+  create_table "tenant_metric_snapshots", force: :cascade do |t|
+    t.integer "active_members_count", default: 0, null: false
+    t.integer "at_risk_count", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.bigint "revenue_cents", default: 0, null: false
+    t.date "snapshot_date", null: false
+    t.bigint "tenant_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["tenant_id", "snapshot_date"], name: "index_tenant_metric_snapshots_on_tenant_id_and_snapshot_date", unique: true
+    t.index ["tenant_id"], name: "index_tenant_metric_snapshots_on_tenant_id"
+  end
+
   create_table "tenants", force: :cascade do |t|
     t.datetime "activated_at"
     t.string "commerce7_tenant_id", null: false
@@ -71,4 +83,5 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_10_025506) do
 
   add_foreign_key "club_members", "tenants"
   add_foreign_key "order_summaries", "tenants"
+  add_foreign_key "tenant_metric_snapshots", "tenants"
 end

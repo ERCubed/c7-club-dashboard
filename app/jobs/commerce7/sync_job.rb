@@ -30,6 +30,13 @@ module Commerce7
     def sync_tenant(tenant)
       Current.tenant = tenant
       primary_memberships_by_customer(tenant).each_value { |membership| upsert(tenant, membership) }
+      # Refreshes today's trend snapshot with this tenant's just-synced
+      # state — runs here (webhook-triggered or the daily reconciliation)
+      # rather than only once a day, so the dashboard's trend charts stay
+      # live. Skipped on a sync failure below rather than snapshotting
+      # possibly-partial data; that tenant's last successful snapshot
+      # (or none, for a brand new tenant) simply carries forward.
+      TenantMetricSnapshot.capture!(tenant)
     rescue Commerce7::Client::Error => e
       Rails.logger.error("Commerce7 sync failed for tenant #{tenant.commerce7_tenant_id}: #{e.message}")
     ensure

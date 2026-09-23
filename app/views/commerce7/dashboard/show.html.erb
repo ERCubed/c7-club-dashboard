@@ -185,4 +185,23 @@
       <p class="text-sm text-stone-500">No members at risk right now.</p>
     <% end %>
   </section>
+
+  <section aria-labelledby="trends-heading">
+    <div class="flex items-baseline justify-between mb-3">
+      <h2 id="trends-heading" class="text-sm font-medium text-stone-500">Trends</h2>
+      <%= form_with url: commerce7_dashboard_path, method: :get, class: "flex items-center gap-2 text-sm text-stone-500" do %>
+        <%= hidden_field_tag :tenantId, params[:tenantId] %>
+        <%= hidden_field_tag :account, params[:account] %>
+        <label for="trend_days">Last</label>
+        <%= select_tag :trend_days, options_for_select([ [ "30 days", 30 ], [ "90 days", 90 ], [ "180 days", 180 ] ], @trend_days),
+              class: "rounded border border-stone-300 px-2 py-1", id: "trend_days", onchange: "this.form.requestSubmit()" %>
+      <% end %>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <%= render "trend_chart", snapshots: @trend_snapshots, value_method: :active_members_count, title: "Active members", color: "#2a78d6", format: :number %>
+      <%= render "trend_chart", snapshots: @trend_snapshots, value_method: :revenue_cents, title: "Revenue", color: "#1baf7a", format: :currency %>
+      <%= render "trend_chart", snapshots: @trend_snapshots, value_method: :at_risk_count, title: "At risk", color: "#b45309", format: :number %>
+    </div>
+  </section>
 </div>

@@ -52,6 +52,7 @@ remove_member = lambda do |tenant, customer_id|
     Current.tenant = tenant
     ClubMember.find_by(commerce7_customer_id: customer_id)&.destroy
     OrderSummary.find_by(commerce7_customer_id: customer_id)&.destroy
+    TenantMetricSnapshot.capture!(tenant)
   ensure
     Current.tenant = nil
   end

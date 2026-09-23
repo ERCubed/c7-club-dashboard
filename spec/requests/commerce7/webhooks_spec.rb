@@ -80,6 +80,18 @@ RSpec.describe "Commerce7 webhooks", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "refreshes today's trend snapshot" do
+      Current.tenant = tenant
+      ClubMember.create!(tenant: tenant, commerce7_customer_id: "cust-1", status: "Active")
+      ClubMember.create!(tenant: tenant, commerce7_customer_id: "cust-2", status: "Active")
+      Current.tenant = nil
+
+      post_webhook(object: "Club Membership", action: "Delete", payload: { customerId: "cust-1" })
+
+      Current.tenant = tenant
+      expect(TenantMetricSnapshot.find_by(snapshot_date: Date.current).active_members_count).to eq(1)
+    end
+
     it "is a no-op when the payload has no customerId" do
       post_webhook(object: "Club Membership", action: "Delete", payload: {})
 
