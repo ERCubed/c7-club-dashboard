@@ -23,8 +23,10 @@ production:
     class: Commerce7::SyncJob
     queue: default
     schedule: every day at 4am
-  # Runs after commerce7_sync so today's snapshot reflects today's synced
-  # data — see Commerce7::SnapshotMetricsJob.
+  # Snapshotting also happens live after every webhook-triggered sync/delete
+  # (see Commerce7::SyncJob#sync_tenant and config/initializers/commerce7.rb);
+  # this daily run is now just a safety net for a tenant with no webhook
+  # activity that day — see Commerce7::SnapshotMetricsJob.
   commerce7_snapshot_metrics:
     class: Commerce7::SnapshotMetricsJob
     queue: default

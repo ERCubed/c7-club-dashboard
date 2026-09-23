@@ -136,4 +136,30 @@ RSpec.describe Commerce7::SyncJob do
     Current.tenant = healthy
     expect(ClubMember.find_by(commerce7_customer_id: "cust-2")).to be_present
   end
+
+  describe "trend snapshotting" do
+    it "captures today's snapshot from the just-synced data" do
+      tenant = Tenant.create!(commerce7_tenant_id: "winery-1")
+      stub_memberships(tenant, [ membership(customer_id: "cust-1", club_title: "Red Club") ])
+
+      described_class.perform_now
+
+      Current.tenant = tenant
+      snapshot = TenantMetricSnapshot.find_by(snapshot_date: Date.current)
+      expect(snapshot.active_members_count).to eq(1)
+      expect(snapshot.revenue_cents).to eq(24_110)
+    end
+
+    it "does not snapshot a tenant whose sync failed, rather than capturing partial data" do
+      failing = Tenant.create!(commerce7_tenant_id: "winery-failing")
+      stub_request(:get, "https://api.commerce7.com/v1/club-membership")
+        .with(query: hash_including("page" => "1"), headers: { "tenant" => "winery-failing" })
+        .to_return(status: 500, body: "boom")
+
+      described_class.perform_now
+
+      Current.tenant = failing
+      expect(TenantMetricSnapshot.find_by(snapshot_date: Date.current)).to be_nil
+    end
+  end
 end

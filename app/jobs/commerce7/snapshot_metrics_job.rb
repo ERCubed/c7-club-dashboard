@@ -1,13 +1,12 @@
 module Commerce7
-  # Recurring job (see config/recurring.yml) that captures a daily point-in-time
-  # snapshot of each active tenant's membership metrics, so the dashboard can
-  # chart trends over time — ClubMember/OrderSummary only ever hold current
-  # state, with no history of their own.
-  #
-  # Runs after Commerce7::SyncJob's daily reconciliation so a given day's
-  # snapshot reflects that day's synced data. Idempotent by construction
-  # (find_or_initialize_by tenant+date) — a retry or a manual re-run for
-  # today just overwrites today's snapshot rather than duplicating it.
+  # Recurring job (see config/recurring.yml) that captures today's snapshot
+  # for every active tenant. TenantMetricSnapshot.capture! also runs after
+  # every Commerce7::SyncJob sync (webhook-triggered or this job's own daily
+  # reconciliation call) and after every webhook-driven delete (see
+  # config/initializers/commerce7.rb), so this job is now a safety net for
+  # any tenant with no sync/webhook activity that day — not the primary
+  # source of a day's snapshot — mirroring why SyncJob's own daily run
+  # stayed as a reconciliation pass once webhooks covered most updates.
   class SnapshotMetricsJob < ApplicationJob
     queue_as :default
 
@@ -19,11 +18,7 @@ module Commerce7
 
     def snapshot(tenant)
       Current.tenant = tenant
-      TenantMetricSnapshot.find_or_initialize_by(tenant: tenant, snapshot_date: Date.current).update!(
-        active_members_count: ClubMember.tier_breakdown.values.sum,
-        revenue_cents: ClubMember.revenue_by_tier.values.sum,
-        at_risk_count: ClubMember.at_risk.count
-      )
+      TenantMetricSnapshot.capture!(tenant)
     ensure
       Current.tenant = nil
     end

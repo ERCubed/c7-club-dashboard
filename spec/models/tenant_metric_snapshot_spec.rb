@@ -36,6 +36,35 @@ RSpec.describe TenantMetricSnapshot, type: :model do
     expect(other).to be_valid
   end
 
+  describe ".capture!" do
+    it "creates today's snapshot from the tenant's current ClubMember/OrderSummary state" do
+      tenant = Tenant.create!(commerce7_tenant_id: "abc123")
+      Current.tenant = tenant
+      ClubMember.create!(tenant: tenant, commerce7_customer_id: "cust-1", status: "Active")
+      OrderSummary.create!(tenant: tenant, commerce7_customer_id: "cust-1", lifetime_value_cents: 5_000, last_order_at: 1.year.ago)
+
+      TenantMetricSnapshot.capture!(tenant)
+
+      snapshot = TenantMetricSnapshot.find_by(snapshot_date: Date.current)
+      expect(snapshot.active_members_count).to eq(1)
+      expect(snapshot.revenue_cents).to eq(5_000)
+      expect(snapshot.at_risk_count).to eq(1)
+    end
+
+    it "refreshes rather than duplicates today's snapshot on a repeat call" do
+      tenant = Tenant.create!(commerce7_tenant_id: "abc123")
+      Current.tenant = tenant
+      ClubMember.create!(tenant: tenant, commerce7_customer_id: "cust-1", status: "Active")
+
+      TenantMetricSnapshot.capture!(tenant)
+      ClubMember.create!(tenant: tenant, commerce7_customer_id: "cust-2", status: "Active")
+      TenantMetricSnapshot.capture!(tenant)
+
+      expect(TenantMetricSnapshot.where(snapshot_date: Date.current).count).to eq(1)
+      expect(TenantMetricSnapshot.find_by(snapshot_date: Date.current).active_members_count).to eq(2)
+    end
+  end
+
   describe ".recent" do
     it "only includes snapshots within the given day window, oldest first" do
       tenant = Tenant.create!(commerce7_tenant_id: "abc123")
