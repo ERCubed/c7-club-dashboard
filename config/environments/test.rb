@@ -6,6 +6,14 @@
 Rails.application.configure do
   # Settings specified here will take precedence over those in config/application.rb.
 
+  # Fixed, test-only Active Record encryption keys so the suite (and CI,
+  # including Dependabot PRs, which can't read Actions secrets) runs without
+  # config/master.key. Never used outside the test environment; development
+  # and production read theirs from credentials.
+  config.active_record.encryption.primary_key = "test-primary-key-00000000000000000"
+  config.active_record.encryption.deterministic_key = "test-deterministic-key-0000000000"
+  config.active_record.encryption.key_derivation_salt = "test-key-derivation-salt-00000000"
+
   # While tests run files are not watched, reloading is not necessary.
   config.enable_reloading = false
 

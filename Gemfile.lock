@@ -410,6 +410,7 @@ DEPENDENCIES
   commerce7-rails!
   debug
   importmap-rails
+  json (~> 2.21)
   kamal
   pg (~> 1.1)
   propshaft
