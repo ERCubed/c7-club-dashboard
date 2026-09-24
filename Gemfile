@@ -40,7 +40,7 @@ gem "thruster", require: false
 # Commerce7 App Store integration plumbing: activation/deactivation, staff
 # App Extension auth, webhook dispatch, the REST client, and the 30-day
 # post-uninstall purge [https://github.com/ERCubed/commerce7-rails]
-gem "commerce7-rails", github: "ERCubed/commerce7-rails", tag: "v0.1.1"
+gem "commerce7-rails", github: "ERCubed/commerce7-rails", tag: "v0.2.1"
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
