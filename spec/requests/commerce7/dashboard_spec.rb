@@ -136,10 +136,12 @@ RSpec.describe "Commerce7 dashboard", type: :request do
     expect(response.headers["X-Frame-Options"]).to be_nil
   end
 
-  it "returns 403 for an unknown tenant" do
+  it "returns 403 for an unknown tenant, as an error page Commerce7 can frame" do
     get commerce7_dashboard_path, params: { tenantId: "unknown", account: "jwt-token" }
 
     expect(response).to have_http_status(:forbidden)
+    expect(response.body).to include("verify your Commerce7 login")
+    expect(response.headers["X-Frame-Options"]).to be_nil
   end
 
   describe "Trends" do
