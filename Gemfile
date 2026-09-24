@@ -40,7 +40,7 @@ gem "thruster", require: false
 # Commerce7 App Store integration plumbing: activation/deactivation, staff
 # App Extension auth, webhook dispatch, the REST client, and the 30-day
 # post-uninstall purge [https://github.com/ERCubed/commerce7-rails]
-gem "commerce7-rails", github: "ERCubed/commerce7-rails", tag: "v0.2.1"
+gem "commerce7-rails", github: "ERCubed/commerce7-rails", tag: "v0.1.1"
 
 # json 3.0 changed JSON.parse's signature and breaks ActiveSupport 8.1.3's
 # JSON decoding (every jsonb column read, for one). Lift once Rails supports it.
