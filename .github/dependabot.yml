@@ -11,6 +11,11 @@ updates:
   # the Gemfile). Drop this with the Rails upgrade that supports json 3.
   - dependency-name: json
     update-types: [ "version-update:semver-major" ]
+  # Our own gem (github: ERCubed/commerce7-rails). Releases come through
+  # the gem itself and each app is bumped by hand in the same change.
+  # Dependabot also misreads its tags and proposes downgrades (e.g.
+  # v0.2.1 -> v0.1.1).
+  - dependency-name: commerce7-rails
 - package-ecosystem: github-actions
   directory: "/"
   schedule:
