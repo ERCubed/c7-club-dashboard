@@ -8,8 +8,8 @@ RSpec.describe "Commerce7 webhooks", type: :request do
   include ActiveJob::TestHelper
 
   let!(:tenant) { Tenant.create!(commerce7_tenant_id: "winery-1") }
-  let!(:username) { Rails.application.credentials.dig(:commerce7, :webhook_username) }
-  let!(:password) { Rails.application.credentials.dig(:commerce7, :webhook_password) }
+  let!(:username) { "c7-user" }
+  let!(:password) { "c7-pass" }
   let(:auth_headers) { { "HTTP_AUTHORIZATION" => ActionController::HttpAuthentication::Basic.encode_credentials(username, password) } }
 
   def post_webhook(object:, action:, payload: {}, user: "staff@example.com")

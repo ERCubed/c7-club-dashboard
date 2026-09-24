@@ -65,3 +65,36 @@ jobs:
       - name: Lint code for consistent style
         run: bin/rubocop -f github
 
+
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: --health-cmd="pg_isready" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    env:
+      RAILS_ENV: test
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      # No config/master.key needed (so this also runs on Dependabot PRs,
+      # which can't read Actions secrets): the test environment uses fixed,
+      # test-only encryption keys (config/environments/test.rb) and specs
+      # stub the Commerce7 credentials (spec/support/commerce7_credentials.rb).
+      - name: Run specs (fails below 100% line/branch coverage)
+        run: bin/rails db:test:prepare && bundle exec rspec

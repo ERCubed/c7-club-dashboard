@@ -5,8 +5,8 @@ require "rails_helper"
 # This covers what's actually this app's code: the on_activate hook
 # registered in config/initializers/commerce7.rb.
 RSpec.describe "Commerce7 activations", type: :request do
-  let!(:username) { Rails.application.credentials.dig(:commerce7, :webhook_username) }
-  let!(:password) { Rails.application.credentials.dig(:commerce7, :webhook_password) }
+  let!(:username) { "c7-user" }
+  let!(:password) { "c7-pass" }
   let(:auth_headers) { { "HTTP_AUTHORIZATION" => ActionController::HttpAuthentication::Basic.encode_credentials(username, password) } }
 
   it "creates a new tenant from the activation payload" do
