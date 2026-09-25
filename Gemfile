@@ -1,7 +1,7 @@
 source "https://rubygems.org"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
-gem "rails", "~> 8.1.3", ">= 8.1.3.1"
+gem "rails", "~> 8.1.4"
 # The modern asset pipeline for Rails [https://github.com/rails/propshaft]
 gem "propshaft"
 # Use postgresql as the database for Active Record
@@ -41,10 +41,6 @@ gem "thruster", require: false
 # App Extension auth, webhook dispatch, the REST client, and the 30-day
 # post-uninstall purge [https://github.com/ERCubed/commerce7-rails]
 gem "commerce7-rails", github: "ERCubed/commerce7-rails", tag: "v0.2.1"
-
-# json 3.0 changed JSON.parse's signature and breaks ActiveSupport 8.1.3's
-# JSON decoding (every jsonb column read, for one). Lift once Rails supports it.
-gem "json", "~> 2.21"
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
